@@ -8,3 +8,7 @@ composer.lock
 *.iml
 out
 gen
+
+# others
+utils.md
+docs
