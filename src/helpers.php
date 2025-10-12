@@ -191,6 +191,19 @@ if (!function_exists('dump')) {
     }
 }
 
+if (!function_exists('ppre')) {
+    /**
+     * Dump and die (útil para debugging)
+     */
+    function ppre(...$vars): void {
+        foreach ($vars as $var) {
+            echo '<pre>';
+            print_r($var);
+            echo '</pre>';
+        }
+    }
+}
+
 if (!function_exists('container')) {
     /**
      * Obtener el container

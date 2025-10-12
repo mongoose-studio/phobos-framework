@@ -107,6 +107,13 @@ class Request {
     }
 
     /**
+     * @return array
+     */
+    public function allParams(): array {
+        return $this->params;
+    }
+
+    /**
      * Establecer parámetros de ruta
      */
     public function setParams(array $params): void {
@@ -171,7 +178,7 @@ class Request {
      */
     public function json(string $key = null, mixed $default = null): mixed {
         if ($this->jsonCache === null) {
-            $this->jsonCache = json_decode($this->body) ?? [];
+            $this->jsonCache = json_decode($this->body) ?? new stdClass();
         }
 
         if ($key === null) {
