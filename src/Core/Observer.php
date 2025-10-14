@@ -12,6 +12,12 @@
 
 namespace PhobosFramework\Core;
 
+/**
+ * Clase Observer para registrar y monitorear eventos del sistema
+ *
+ * Esta clase proporciona funcionalidades para registrar eventos,
+ * monitorear el uso de memoria y el tiempo de ejecución
+ */
 class Observer {
 
     private static array $stack = [];
@@ -19,7 +25,10 @@ class Observer {
     private static bool $enabled = true;
 
     /**
-     * Registrar un evento en el stack
+     * Registra un evento en el stack de observación
+     *
+     * @param string $event Nombre o identificador del evento
+     * @param array $context Datos adicionales del contexto del evento
      */
     public static function record(string $event, array $context = []): void {
         if (!self::$enabled) {
@@ -41,14 +50,18 @@ class Observer {
     }
 
     /**
-     * Obtener todo el stack
+     * Obtiene todo el stack de eventos registrados
+     *
+     * @return array Array con todos los eventos registrados
      */
     public static function dump(): array {
         return self::$stack;
     }
 
     /**
-     * Obtener stack formateado con tiempos relativos
+     * Obtiene el stack formateado con tiempos relativos y uso de memoria
+     *
+     * @return array Array con eventos formateados incluyendo tiempo transcurrido y memoria
      */
     public static function dumpFormatted(): array {
         if (empty(self::$stack)) {
@@ -72,7 +85,10 @@ class Observer {
     }
 
     /**
-     * Obtener solo eventos de un tipo específico
+     * Filtra y obtiene solo los eventos que coinciden con un patrón específico
+     *
+     * @param string $eventPattern Patrón para filtrar los eventos
+     * @return array Array con los eventos filtrados
      */
     public static function filter(string $eventPattern): array {
         return array_filter(self::$stack, function ($entry) use ($eventPattern) {
@@ -81,14 +97,14 @@ class Observer {
     }
 
     /**
-     * Limpiar el stack
+     * Limpia el stack eliminando todos los eventos registrados
      */
     public static function clear(): void {
         self::$stack = [];
     }
 
     /**
-     * Habilitar/deshabilitar observador
+     * Habilita el registro de eventos
      */
     public static function enable(): void {
         self::$enabled = true;
@@ -99,21 +115,27 @@ class Observer {
     }
 
     /**
-     * Verificar si está habilitado
+     * Verifica si el observador está habilitado
+     *
+     * @return bool Estado actual del observador
      */
     public static function isEnabled(): bool {
         return self::$enabled;
     }
 
     /**
-     * Configurar tamaño máximo del stack
+     * Configura el tamaño máximo del stack de eventos
+     *
+     * @param int $size Número máximo de eventos a mantener
      */
     public static function setMaxStackSize(int $size): void {
         self::$maxStackSize = $size;
     }
 
     /**
-     * Obtener resumen de performance
+     * Obtiene un resumen del rendimiento incluyendo tiempo total y uso de memoria
+     *
+     * @return array Resumen con estadísticas de rendimiento
      */
     public static function summary(): array {
         if (empty(self::$stack)) {

@@ -1,13 +1,37 @@
 <?php
 
+/**
+ * # Phobos Framework
+ *
+ * Para la información completa acerca del copyright y la licencia,
+ * por favor vea el archivo LICENSE que va distribuido con el código fuente.
+ *
+ * @author      Marcel Rojas <marcelrojas16@gmail.com>
+ * @copyright   Copyright (c) 2012-2025, Marcel Rojas <marcelrojas16@gmail.com>
+ */
+
 namespace PhobosFramework\Http;
 
+
+/**
+ * Clase para manejar respuestas HTTP
+ *
+ * Esta clase proporciona métodos para crear y enviar diferentes tipos de respuestas HTTP,
+ * incluyendo JSON, texto plano, HTML y respuestas de error.
+ */
 class Response {
 
     private array $headers = [];
     private int $statusCode;
     private mixed $content;
 
+    /**
+     * Constructor de la clase Response
+     *
+     * @param mixed $content Contenido de la respuesta
+     * @param int $statusCode Código de estado HTTP (por defecto 200)
+     * @param array $headers Headers HTTP adicionales
+     */
     public function __construct(
         mixed $content = '',
         int $statusCode = 200,
@@ -19,7 +43,12 @@ class Response {
     }
 
     /**
-     * Crear respuesta JSON
+     * Crea una respuesta JSON
+     *
+     * @param mixed $data Datos a convertir a JSON
+     * @param int $statusCode Código de estado HTTP (por defecto 200)
+     * @param array $headers Headers HTTP adicionales
+     * @return self            Instancia de Response
      */
     public static function json(mixed $data, int $statusCode = 200, array $headers = []): self {
         $response = new self(
@@ -34,14 +63,21 @@ class Response {
     }
 
     /**
-     * Crear respuesta vacía
+     * Crea una respuesta vacía
+     *
+     * @param int $statusCode Código de estado HTTP (por defecto 204)
+     * @return self            Instancia de Response
      */
     public static function empty(int $statusCode = 204): self {
         return new self('', $statusCode);
     }
 
     /**
-     * Crear respuesta de texto
+     * Crea una respuesta de texto plano
+     *
+     * @param string $content Contenido de texto
+     * @param int $statusCode Código de estado HTTP (por defecto 200)
+     * @return self            Instancia de Response
      */
     public static function text(string $content, int $statusCode = 200): self {
         $response = new self($content, $statusCode);
@@ -50,7 +86,11 @@ class Response {
     }
 
     /**
-     * Crear respuesta HTML
+     * Crea una respuesta HTML
+     *
+     * @param string $content Contenido HTML
+     * @param int $statusCode Código de estado HTTP (por defecto 200)
+     * @return self            Instancia de Response
      */
     public static function html(string $content, int $statusCode = 200): self {
         $response = new self($content, $statusCode);
@@ -59,7 +99,12 @@ class Response {
     }
 
     /**
-     * Crear respuesta de error
+     * Crea una respuesta de error
+     *
+     * @param string $message Mensaje de error
+     * @param int $statusCode Código de estado HTTP (por defecto 400)
+     * @param array $extra Datos adicionales para incluir en la respuesta
+     * @return self            Instancia de Response
      */
     public static function error(string $message, int $statusCode = 400, array $extra = []): self {
         return self::json(array_merge([
@@ -69,7 +114,11 @@ class Response {
     }
 
     /**
-     * Establecer header
+     * Establece un header HTTP
+     *
+     * @param string $name Nombre del header
+     * @param string $value Valor del header
+     * @return self           Instancia de Response
      */
     public function header(string $name, string $value): self {
         $this->headers[$name] = $value;
@@ -77,7 +126,10 @@ class Response {
     }
 
     /**
-     * Establecer múltiples headers
+     * Establece múltiples headers HTTP
+     *
+     * @param array $headers Array asociativo de headers [nombre => valor]
+     * @return self           Instancia de Response
      */
     public function withHeaders(array $headers): self {
         foreach ($headers as $name => $value) {
@@ -87,7 +139,10 @@ class Response {
     }
 
     /**
-     * Establecer status code
+     * Establece el código de estado HTTP
+     *
+     * @param int $code Código de estado HTTP
+     * @return self          Instancia de Response
      */
     public function status(int $code): self {
         $this->statusCode = $code;
@@ -95,7 +150,9 @@ class Response {
     }
 
     /**
-     * Obtener status code
+     * Obtiene el código de estado HTTP actual
+     *
+     * @return int          Código de estado HTTP
      */
     public function getStatusCode(): int {
         return $this->statusCode;
@@ -104,19 +161,28 @@ class Response {
     /**
      * Obtener content
      */
+    /**
+     * Obtiene el contenido de la respuesta
+     *
+     * @return mixed       Contenido de la respuesta
+     */
     public function getContent(): mixed {
         return $this->content;
     }
 
     /**
-     * Obtener headers
+     * Obtiene todos los headers HTTP establecidos
+     *
+     * @return array      Array asociativo de headers
      */
     public function getHeaders(): array {
         return $this->headers;
     }
 
     /**
-     * Enviar la respuesta
+     * Envía la respuesta al cliente
+     *
+     * Establece el código de estado, los headers y envía el contenido
      */
     public function send(): void {
         // Enviar status code
@@ -142,7 +208,9 @@ class Response {
     }
 
     /**
-     * Convertir a string
+     * Convierte la respuesta a string
+     *
+     * @return string     Representación en string del contenido
      */
     public function __toString(): string {
         if (is_array($this->content)) {
@@ -153,7 +221,10 @@ class Response {
     }
 
     /**
-     * Obtener texto del status code usando el Enum
+     * Obtiene el texto descriptivo para un código de estado HTTP
+     *
+     * @param int $code Código de estado HTTP
+     * @return string      Texto descriptivo del código de estado
      */
     private static function getStatusText(int $code): string {
         return HttpStatus::fromCode($code)->text();

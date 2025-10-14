@@ -1,18 +1,44 @@
 <?php
 
+/**
+ * # Phobos Framework
+ *
+ * Para la información completa acerca del copyright y la licencia,
+ * por favor vea el archivo LICENSE que va distribuido con el código fuente.
+ *
+ * @author      Marcel Rojas <marcelrojas16@gmail.com>
+ * @copyright   Copyright (c) 2012-2025, Marcel Rojas <marcelrojas16@gmail.com>
+ */
+
 namespace PhobosFramework\Core;
 
 use Closure;
 use PhobosFramework\Config\Config;
 use PhobosFramework\Config\EnvLoader;
+use PhobosFramework\Exceptions\ContainerException;
 use PhobosFramework\Routing\Router;
 use PhobosFramework\Http\Request;
 use PhobosFramework\Http\Response;
 use PhobosFramework\Middleware\Pipeline;
 use PhobosFramework\Module\ModuleInterface;
+use ReflectionException;
 use RuntimeException;
 use Throwable;
 
+/**
+ * Clase principal del framework Phobos
+ *
+ * Esta clase actúa como el punto de entrada principal del framework y es responsable de:
+ * - Inicializar y gestionar el contenedor de dependencias
+ * - Cargar la configuración del entorno (.env)
+ * - Cargar archivos de configuración
+ * - Gestionar el ciclo de vida de los providers
+ * - Manejar el enrutamiento de las peticiones HTTP
+ * - Ejecutar la aplicación y generar respuestas
+ *
+ * Se implementa utilizando el patrón Singleton para garantizar una única instancia
+ * en toda la aplicación.
+ */
 class Phobos {
 
     private static ?self $instance = null;
@@ -23,6 +49,17 @@ class Phobos {
     private array $providers = [];
     private array $loadedProviders = [];
 
+    /**
+     * Constructor privado de la clase Phobos
+     *
+     * Inicializa una nueva instancia del framework configurando:
+     * - La ruta base de la aplicación
+     * - El contenedor de dependencias
+     * - El router
+     * - Registra las instancias básicas en el contenedor
+     *
+     * @param string $basePath Ruta base donde se encuentra la aplicación
+     */
     private function __construct(string $basePath) {
         $this->basePath = $basePath;
         $this->container = new Container();
@@ -39,7 +76,13 @@ class Phobos {
     }
 
     /**
-     * Inicializar Phobos (Singleton)
+     * Inicializa una nueva instancia de Phobos
+     *
+     * Implementa el patrón Singleton para garantizar una única instancia.
+     * Configura el contenedor de dependencias y registra los servicios básicos.
+     *
+     * @param string $basePath Ruta base de la aplicación
+     * @return self Instancia única de Phobos
      */
     public static function init(string $basePath): self {
         if (self::$instance === null) {
@@ -50,14 +93,22 @@ class Phobos {
     }
 
     /**
-     * Obtener instancia actual
+     * Obtiene la instancia actual del framework
+     *
+     * @return self|null Retorna la instancia única de Phobos o null si no está inicializada
      */
     public static function getInstance(): ?self {
         return self::$instance;
     }
 
     /**
-     * Cargar variables de entorno
+     * Carga las variables de entorno desde un archivo .env
+     *
+     * Si no se especifica una ruta, buscará el archivo .env en el directorio padre
+     * de la ruta base de la aplicación.
+     *
+     * @param string|null $envFile Ruta opcional al archivo .env
+     * @return self Retorna la instancia actual para encadenamiento
      */
     public function loadEnvironment(string $envFile = null): self {
         Observer::record('phobos.loading_environment');
@@ -82,7 +133,17 @@ class Phobos {
     }
 
     /**
-     * Cargar configuración
+     * Carga los archivos de configuración de la aplicación
+     *
+     * Este método:
+     * - Define la ruta donde se encuentran los archivos de configuración
+     * - Inicializa el sistema de configuración
+     * - Permite especificar una ruta personalizada o usar la predeterminada
+     *
+     * @param string|null $configPath Ruta opcional al directorio de configuración.
+     *                               Si no se especifica, usará el directorio /config
+     *                               en el directorio padre de la ruta base
+     * @return self Retorna la instancia actual para encadenamiento de métodos
      */
     public function loadConfig(string $configPath = null): self {
         Observer::record('phobos.loading_config');
@@ -99,7 +160,16 @@ class Phobos {
     }
 
     /**
-     * Bootstrap de la aplicación con el módulo raíz
+     * Inicializa la aplicación con el módulo raíz especificado
+     *
+     * Este método:
+     * - Registra los providers del módulo
+     * - Ejecuta el boot de los providers
+     * - Registra las rutas del módulo
+     *
+     * @param string $moduleClass Clase del módulo raíz
+     * @return self Retorna la instancia actual para encadenamiento
+     * @throws RuntimeException|ContainerException Si la clase del módulo no existe o no implementa ModuleInterface
      */
     public function bootstrap(string $moduleClass): self {
         Observer::record('phobos.bootstrapping', [
@@ -135,7 +205,16 @@ class Phobos {
     }
 
     /**
-     * Registrar providers
+     * Registra los proveedores de servicios de la aplicación
+     *
+     * Este método:
+     * - Verifica que las clases de los providers existan
+     * - Instancia cada provider usando el contenedor de dependencias
+     * - Ejecuta el método register() de cada provider si existe
+     * - Registra eventos de observación para cada provider registrado
+     *
+     * @param array $providers Lista de clases de providers a registrar
+     * @throws RuntimeException|ContainerException Si la clase del provider no existe
      */
     private function registerProviders(array $providers): void {
         foreach ($providers as $providerClass) {
@@ -160,7 +239,13 @@ class Phobos {
     }
 
     /**
-     * Boot de todos los providers
+     * Inicializa todos los proveedores de servicios registrados
+     *
+     * Este método:
+     * - Ejecuta el método boot() de cada provider si existe
+     * - Marca los providers como inicializados
+     * - Registra eventos de observación para cada provider iniciado
+     * - Se ejecuta después de que todos los providers han sido registrados
      */
     private function bootProviders(): void {
         foreach ($this->providers as $provider) {
@@ -177,7 +262,18 @@ class Phobos {
     }
 
     /**
-     * Ejecutar la aplicación
+     * Ejecuta la aplicación procesando la petición HTTP
+     *
+     * Este método:
+     * - Captura o utiliza la petición HTTP proporcionada
+     * - Encuentra la ruta correspondiente
+     * - Ejecuta los middlewares asociados
+     * - Ejecuta el controlador o acción correspondiente
+     * - Retorna la respuesta generada
+     *
+     * @param Request|null $request Petición HTTP opcional
+     * @return Response Respuesta HTTP generada
+     * @throws Throwable Si ocurre algún error durante la ejecución
      */
     public function run(Request $request = null): Response {
         Observer::record('phobos.running');
@@ -232,7 +328,19 @@ class Phobos {
     }
 
     /**
-     * Ejecutar acción del controlador usando Container
+     * Ejecuta una acción del controlador utilizando el contenedor de dependencias
+     *
+     * Este método:
+     * - Maneja diferentes tipos de acciones (Closure, array [Controller, method], string)
+     * - Resuelve el controlador desde el contenedor con autowiring si es necesario
+     * - Inyecta dependencias en la acción al ejecutarla
+     * - Combina los parámetros de la ruta con el objeto Request
+     *
+     * @param mixed $action La acción a ejecutar (Closure, array o string)
+     * @param Request $request Objeto Request actual
+     * @param array $params Parámetros extraídos de la ruta
+     * @return mixed El resultado de ejecutar la acción
+     * @throws ContainerException|ReflectionException Si el tipo de acción no es válido
      */
     private function executeAction(mixed $action, Request $request, array $params): mixed {
         // Si es un Closure
@@ -262,7 +370,16 @@ class Phobos {
     }
 
     /**
-     * Obtener descripción de la acción
+     * Obtiene una descripción legible de la acción a ejecutar
+     *
+     * Este método:
+     * - Convierte diferentes tipos de acciones en una cadena descriptiva
+     * - Maneja acciones de tipo array [Controller, method]
+     * - Maneja acciones de tipo string "Controller::method"
+     * - Identifica Closures
+     *
+     * @param mixed $action La acción a describir (puede ser Closure, array o string)
+     * @return string Descripción legible de la acción
      */
     private function getActionDescription(mixed $action): string {
         if (is_array($action)) {
@@ -281,19 +398,39 @@ class Phobos {
     /**
      * Getters
      */
-
+    
+    /**
+     * Obtiene la instancia del Router
+     *
+     * @return Router Instancia del router que gestiona las rutas de la aplicación
+     */
     public function getRouter(): Router {
         return $this->router;
     }
 
+    /**
+     * Obtiene la instancia del Contenedor de dependencias
+     *
+     * @return Container Instancia del contenedor que gestiona las dependencias
+     */
     public function getContainer(): Container {
         return $this->container;
     }
 
+    /**
+     * Obtiene la petición HTTP actual
+     *
+     * @return Request|null La petición HTTP actual o null si no se ha capturado
+     */
     public function getRequest(): ?Request {
         return $this->request;
     }
 
+    /**
+     * Obtiene la ruta base de la aplicación
+     *
+     * @return string Ruta absoluta al directorio raíz de la aplicación
+     */
     public function getBasePath(): string {
         return $this->basePath;
     }

@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * # Phobos Framework
+ *
+ * Para la información completa acerca del copyright y la licencia,
+ * por favor vea el archivo LICENSE que va distribuido con el código fuente.
+ *
+ * @author      Marcel Rojas <marcelrojas16@gmail.com>
+ * @copyright   Copyright (c) 2012-2025, Marcel Rojas <marcelrojas16@gmail.com>
+ */
 
 namespace PhobosFramework\Core;
 
@@ -11,39 +20,60 @@ use ReflectionException;
 use Closure;
 
 /**
- * Dependency Injection Container
+ * Dependency Injection Container (DI Container)
  *
- * Features:
- * - Autowiring mediante Reflection
- * - Singleton vs Transient bindings
- * - Interface to Implementation binding
- * - Factory bindings
- * - Resolución recursiva de dependencias
+ * This class implements a dependency injection container that handles:
+ * - Registration of bindings between interfaces and their implementations
+ * - Automatic dependency resolution
+ * - Singleton instance management
+ * - Aliases for easy access
+ * - Circular dependency detection
+ *
+ * Contenedor de Inyección de Dependencias (DI Container)
+ *
+ * Esta clase implementa un contenedor de inyección de dependencias que maneja:
+ * - Registro de vinculaciones (bindings) entre interfaces y sus implementaciones
+ * - Resolución automática de dependencias
+ * - Gestión de instancias singleton
+ * - Alias para facilitar el acceso
+ * - Detección de dependencias circulares
  */
 class Container {
 
     /**
-     * Bindings registrados (clase/interface => resolver)
+     * Almacena las vinculaciones (bindings) registradas en el contenedor
+     * Estructura: ['abstract' => ['concrete' => mixed, 'shared' => bool]]
      */
     private array $bindings = [];
 
     /**
-     * Instancias singleton
+     * Almacena las instancias singleton que serán reutilizadas
+     * Estructura: ['abstract' => object]
      */
     private array $instances = [];
 
     /**
-     * Aliases (shortcuts)
+     * Almacena los alias (nombres alternativos) para las vinculaciones
+     * Estructura: ['alias' => 'abstract']
      */
     private array $aliases = [];
 
     /**
-     * Stack para detectar dependencias circulares
+     * Pila utilizada para detectar dependencias circulares durante la construcción
+     * Almacena las clases que están siendo construidas actualmente
      */
     private array $buildStack = [];
 
     /**
-     * Registrar un binding (transient - nueva instancia cada vez)
+     * Registra una vinculación en el contenedor.
+     *
+     * Este método permite registrar cómo debe resolverse una abstracción (interfaz o clase).
+     * Si no se especifica una implementación concreta, se usará la misma abstracción.
+     * La vinculación se creará como una nueva instancia cada vez que se solicite.
+     *
+     * @param string $abstract El identificador abstracto (interfaz o clase)
+     * @param mixed|null $concrete La implementación concreta (clase, closure o null)
+     * @return void
      */
     public function bind(string $abstract, mixed $concrete = null): void {
         if ($concrete === null) {
@@ -62,7 +92,15 @@ class Container {
     }
 
     /**
-     * Registrar un singleton (una sola instancia compartida)
+     * Registra un singleton en el contenedor.
+     *
+     * Similar a bind(), pero la instancia creada se reutilizará en toda la aplicación.
+     * Solo se creará una instancia la primera vez que se solicite, y las siguientes
+     * solicitudes recibirán la misma instancia.
+     *
+     * @param string $abstract El identificador abstracto (interfaz o clase)
+     * @param mixed|null $concrete La implementación concreta (clase, closure o null)
+     * @return void
      */
     public function singleton(string $abstract, mixed $concrete = null): void {
         if ($concrete === null) {
@@ -81,7 +119,15 @@ class Container {
     }
 
     /**
-     * Registrar una instancia existente (siempre devuelve la misma)
+     * Registra una instancia existente en el contenedor.
+     *
+     * Permite compartir una instancia ya creada a través del contenedor.
+     * Esta instancia se comportará como un singleton, siendo la misma
+     * retornada para todas las solicitudes del identificador abstracto.
+     *
+     * @param string $abstract El identificador abstracto para acceder a la instancia
+     * @param object $instance La instancia del objeto a compartir
+     * @return void
      */
     public function instance(string $abstract, object $instance): void {
         $this->instances[$abstract] = $instance;
@@ -93,7 +139,12 @@ class Container {
     }
 
     /**
-     * Crear un alias (shortcut)
+     * Crea un alias para una vinculación existente.
+     * Permite referenciar una vinculación usando un nombre alternativo.
+     *
+     * @param string $alias El nombre alternativo
+     * @param string $abstract El identificador abstracto original
+     * @return void
      */
     public function alias(string $alias, string $abstract): void {
         $this->aliases[$alias] = $abstract;
@@ -105,7 +156,13 @@ class Container {
     }
 
     /**
-     * Resolver una dependencia del container
+     * Resuelve y devuelve una instancia del contenedor.
+     * Construye el objeto resolviendo todas sus dependencias recursivamente.
+     *
+     * @param string $abstract El identificador abstracto a resolver (interfaz o clase)
+     * @param array $parameters Parámetros opcionales para la construcción del objeto
+     * @return mixed La instancia construida y resuelta con todas sus dependencias
+     * @throws ContainerException Si hay errores en la resolución de dependencias
      */
     public function make(string $abstract, array $parameters = []): mixed {
         Observer::record('container.resolving', [
@@ -143,14 +200,29 @@ class Container {
     }
 
     /**
-     * Alias para make()
+     * Método alternativo para obtener una instancia del contenedor.
+     *
+     * Este método es un alias de make() y proporciona la misma funcionalidad
+     * de resolución de dependencias y construcción de objetos.
+     *
+     * @param string $abstract El identificador abstracto a resolver
+     * @param array $parameters Parámetros opcionales para la construcción
+     * @return mixed La instancia construida y resuelta
      */
     public function get(string $abstract, array $parameters = []): mixed {
         return $this->make($abstract, $parameters);
     }
 
     /**
-     * Verificar si un binding existe
+     * Verifica si existe una vinculación en el contenedor.
+     *
+     * Comprueba si el identificador abstracto está registrado como:
+     * - Una vinculación (binding)
+     * - Una instancia singleton
+     * - Una clase que existe en el sistema
+     *
+     * @param string $abstract El identificador abstracto a verificar
+     * @return bool True si existe la vinculación, false en caso contrario
      */
     public function has(string $abstract): bool {
         $abstract = $this->getAlias($abstract);
@@ -161,7 +233,14 @@ class Container {
     }
 
     /**
-     * Verificar si es singleton
+     * Verifica si una vinculación está registrada como singleton.
+     *
+     * Comprueba si el identificador abstracto:
+     * - Ya tiene una instancia guardada
+     * - Está registrado como vinculación compartida
+     *
+     * @param string $abstract El identificador abstracto a verificar
+     * @return bool True si es singleton, false en caso contrario
      */
     public function isShared(string $abstract): bool {
         $abstract = $this->getAlias($abstract);
@@ -171,7 +250,18 @@ class Container {
     }
 
     /**
-     * Construir una instancia con sus dependencias
+     * Construye una instancia resolviendo todas sus dependencias.
+     *
+     * Este método maneja:
+     * - Ejecución de Closures
+     * - Verificación de clases instanciables
+     * - Detección de dependencias circulares
+     * - Resolución recursiva de dependencias del constructor
+     *
+     * @param mixed $concrete La implementación concreta a construir
+     * @param array $parameters Parámetros opcionales para la construcción
+     * @return object La instancia construida con sus dependencias
+     * @throws ContainerException Si hay errores en la construcción
      */
     private function build(mixed $concrete, array $parameters = []): object {
         // Si es un Closure, ejecutarlo
@@ -226,7 +316,18 @@ class Container {
     }
 
     /**
-     * Resolver dependencias de un constructor/método
+     * Resuelve las dependencias de un constructor o método.
+     *
+     * Este método analiza los parámetros de un constructor o método y resuelve
+     * cada una de sus dependencias, ya sean:
+     * - Valores primitivos proporcionados explícitamente
+     * - Valores por defecto del parámetro
+     * - Instancias de clases que deben ser resueltas por el contenedor
+     *
+     * @param array $parameters Lista de parámetros a resolver
+     * @param array $primitives Valores primitivos proporcionados explícitamente
+     * @return array Lista de dependencias resueltas
+     * @throws ContainerException Si una dependencia no puede ser resuelta
      */
     private function resolveDependencies(array $parameters, array $primitives = []): array {
         $dependencies = [];
@@ -288,7 +389,14 @@ class Container {
     }
 
     /**
-     * Obtener el concrete de un abstract
+     * Obtiene la implementación concreta de una abstracción.
+     *
+     * Busca en las vinculaciones registradas y devuelve la implementación
+     * concreta asociada a una abstracción. Si no existe una vinculación,
+     * devuelve la misma abstracción.
+     *
+     * @param string $abstract El identificador abstracto a resolver
+     * @return mixed La implementación concreta o la misma abstracción
      */
     private function getConcrete(string $abstract): mixed {
         // Si no hay binding, usar el abstract como concrete
@@ -300,15 +408,33 @@ class Container {
     }
 
     /**
-     * Resolver alias
+     * Resuelve un alias a su nombre original.
+     *
+     * Verifica si existe un alias registrado para el identificador dado
+     * y devuelve el nombre original asociado. Si no existe un alias,
+     * devuelve el mismo identificador.
+     *
+     * @param string $abstract El identificador a resolver
+     * @return string El nombre original asociado al alias
      */
     private function getAlias(string $abstract): string {
         return $this->aliases[$abstract] ?? $abstract;
     }
 
     /**
-     * Llamar un método con inyección de dependencias
-     * @throws ReflectionException
+     * Invoca un método con inyección de dependencias.
+     *
+     * Permite ejecutar un método o función resolviendo automáticamente
+     * sus dependencias. Soporta:
+     * - Closures
+     * - Métodos estáticos
+     * - Métodos de instancia
+     *
+     * @param callable|array $callback El método a invocar
+     * @param array $parameters Parámetros opcionales para la invocación
+     * @return mixed El resultado de la invocación
+     * @throws ReflectionException Si hay errores de reflexión
+     * @throws ContainerException Si el callback es inválido
      */
     public function call(callable|array $callback, array $parameters = []): mixed {
         Observer::record('container.calling', [
@@ -341,7 +467,11 @@ class Container {
     }
 
     /**
-     * Limpiar el container
+     * Limpia el contenedor.
+     *
+     * Elimina todas las vinculaciones, instancias singleton,
+     * aliases y la pila de construcción del contenedor,
+     * dejándolo en su estado inicial.
      */
     public function flush(): void {
         $this->bindings = [];
@@ -353,14 +483,25 @@ class Container {
     }
 
     /**
-     * Obtener todos los bindings
+     * Obtiene todas las vinculaciones.
+     *
+     * Devuelve un array con todas las vinculaciones registradas
+     * en el contenedor, incluyendo tanto las compartidas como
+     * las no compartidas.
+     *
+     * @return array Las vinculaciones registradas
      */
     public function getBindings(): array {
         return $this->bindings;
     }
 
     /**
-     * Obtener todas las instancias singleton
+     * Obtiene todas las instancias singleton.
+     *
+     * Devuelve un array con todas las instancias singleton
+     * que han sido creadas y almacenadas en el contenedor.
+     *
+     * @return array Las instancias singleton almacenadas
      */
     public function getInstances(): array {
         return $this->instances;

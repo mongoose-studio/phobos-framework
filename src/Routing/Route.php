@@ -1,9 +1,26 @@
 <?php
 
+/**
+ * # Phobos Framework
+ *
+ * Para la información completa acerca del copyright y la licencia,
+ * por favor vea el archivo LICENSE que va distribuido con el código fuente.
+ *
+ * @author      Marcel Rojas <marcelrojas16@gmail.com>
+ * @copyright   Copyright (c) 2012-2025, Marcel Rojas <marcelrojas16@gmail.com>
+ */
+
 namespace PhobosFramework\Routing;
 
 use PhobosFramework\Http\Request;
 
+
+/**
+ * Clase que representa una ruta en el sistema de enrutamiento.
+ *
+ * Maneja el procesamiento de rutas con parámetros dinámicos, comodines y middlewares.
+ * Soporta patrones como :param, * y ** para crear rutas flexibles y reutilizables.
+ */
 class Route {
 
     private string $regex;
@@ -11,6 +28,13 @@ class Route {
     private array $middlewares = [];
     private ?string $name = null;
 
+    /**
+     * Crea una nueva instancia de ruta.
+     *
+     * @param array $methods Métodos HTTP permitidos para esta ruta
+     * @param string $path Patrón de la ruta (puede incluir :param, * y **)
+     * @param mixed $action Acción a ejecutar cuando la ruta coincide
+     */
     public function __construct(
         private array  $methods,
         private string $path,
@@ -20,7 +44,14 @@ class Route {
     }
 
     /**
-     * Compilar pattern de ruta a regex
+     * Compila el patrón de ruta en una expresión regular.
+     *
+     * Convierte los diferentes tipos de patrones en expresiones regulares:
+     * - :param -> Captura parámetros dinámicos
+     * - ** -> Captura todo incluyendo barras (wildcard completo)
+     * - * -> Captura un segmento entre barras
+     *
+     * @return void
      */
     private function compilePattern(): void {
         $pattern = $this->path;
@@ -52,7 +83,10 @@ class Route {
     }
 
     /**
-     * Verificar si esta ruta coincide con el request
+     * Verifica si la ruta coincide con una solicitud HTTP.
+     *
+     * @param Request $request Solicitud HTTP a verificar
+     * @return RouteMatch|null Objeto RouteMatch si hay coincidencia, null en caso contrario
      */
     public function matches(Request $request): ?RouteMatch {
         // Verificar método HTTP
@@ -82,7 +116,10 @@ class Route {
     }
 
     /**
-     * Agregar middleware(s) a la ruta
+     * Agrega uno o más middlewares a la ruta.
+     *
+     * @param array|string $middleware Middleware(s) a agregar
+     * @return self
      */
     public function middleware(array|string $middleware): self {
         $middlewares = is_array($middleware) ? $middleware : [$middleware];
@@ -91,7 +128,10 @@ class Route {
     }
 
     /**
-     * Establecer nombre de la ruta
+     * Asigna un nombre identificador a la ruta.
+     *
+     * @param string $name Nombre de la ruta
+     * @return self
      */
     public function name(string $name): self {
         $this->name = $name;
@@ -102,26 +142,50 @@ class Route {
      * Getters
      */
 
+    /**
+     * Obtiene los métodos HTTP permitidos para esta ruta.
+     * @return array
+     */
     public function getMethods(): array {
         return $this->methods;
     }
 
+    /**
+     * Obtiene el patrón de la ruta.
+     * @return string
+     */
     public function getPath(): string {
         return $this->path;
     }
 
+    /**
+     * Obtiene la acción asociada a la ruta.
+     * @return mixed
+     */
     public function getAction(): mixed {
         return $this->action;
     }
 
+    /**
+     * Obtiene los middlewares asociados a la ruta.
+     * @return array
+     */
     public function getMiddlewares(): array {
         return $this->middlewares;
     }
 
+    /**
+     * Obtiene el nombre de la ruta.
+     * @return string|null
+     */
     public function getName(): ?string {
         return $this->name;
     }
 
+    /**
+     * Obtiene los nombres de los parámetros dinámicos de la ruta.
+     * @return array
+     */
     public function getParamNames(): array {
         return $this->paramNames;
     }
