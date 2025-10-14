@@ -9,6 +9,11 @@ composer.lock
 out
 gen
 
+# PHPUnit
+.phpunit.cache/
+.phpunit.result.cache
+/coverage/
+
 # others
 utils.md
 docs
