@@ -1,0 +1,275 @@
+# Phobos Framework v3.0.2
+## About Phobos Framework
+
+Phobos Framework v3.0.2 is a modern, minimalist PHP framework (8.3+) designed for building RESTful APIs. It's inspired by Slim's lightweight design and Angular's modularity but remains dependency-free at its core. This is a successor to Phobos 1/2 and XWork (3-7), maintaining the modular DNA while adding modern features like DI container with autowiring, middleware pipelines, and an Observer system for debugging.
+
+## Core Architecture
+
+### Application Lifecycle
+
+The framework follows a clear initialization and execution flow managed by the `Phobos` class (src/Core/Phobos.php):
+
+1. **Initialization**: `Phobos::init($basePath)` - Creates singleton instance, sets up Container and Router
+2. **Environment**: `loadEnvironment()` - Loads .env file via EnvLoader
+3. **Configuration**: `loadConfig()` - Sets config path for Config system
+4. **Bootstrap**: `bootstrap($moduleClass)` - Registers providers, boots them, and registers module routes
+5. **Execution**: `run($request)` - Captures request, matches route, executes middleware pipeline, and returns response
+
+### Dependency Injection Container
+
+The Container (src/Core/Container.php) is central to the framework architecture:
+
+- **Autowiring**: Automatically resolves constructor dependencies via Reflection
+- **Binding types**: `bind()` for transient, `singleton()` for shared, `instance()` for existing objects
+- **Method injection**: `call()` method injects dependencies into closures and class methods
+- **Circular dependency detection**: Tracks build stack to prevent infinite loops
+- **Route params + Request injection**: Controllers receive both route parameters and Request automatically
+
+The Container is registered in itself, making it available everywhere. Controllers and middleware are resolved through it, enabling full dependency injection.
+
+### Routing System
+
+The Router (src/Routing/Router.php) supports:
+
+- **HTTP methods**: `get()`, `post()`, `put()`, `delete()`, `patch()`, `options()`, `all()`, `multi()`
+- **Dynamic parameters**: `/users/:id` syntax (colon-prefixed, not curly braces)
+- **Wildcards**:
+  - `*` matches a single segment (e.g., `/files/*/download`)
+  - `**` matches everything including slashes (e.g., `/files/**`)
+  - Wildcard values accessible via `segment_0`, `segment_1`, or `wildcard` parameters
+- **Route grouping**: `group(['prefix' => 'admin', 'middleware' => 'auth'], fn($r) => ...)`
+- **Modules**: `module($prefix, $moduleClass)` for organizing related routes
+- **Named routes**: `->name('users.show')` then `route('users.show', ['id' => 5])`
+- **Actions**: Accepts closures, `[Controller::class, 'method']`, or `"Controller::method"`
+
+Routes are matched in order of registration. Parameters are injected into the Request object before controller execution.
+
+### Module System
+
+Modules (src/Module/ModuleInterface.php) organize functionality into self-contained units:
+
+- **Required methods**: `routes(Router $router)`, `middlewares()`, `providers()`
+- **Bootstrap integration**: Root module is passed to `Phobos::bootstrap()`
+- **Providers**: Modules return array of ServiceProvider classes to register
+- **Routes**: Module defines its own routes via the Router instance
+- **Middlewares**: Module can define global middlewares for all its routes
+
+### Middleware Pipeline
+
+The Pipeline (src/Middleware/Pipeline.php) creates an onion-style middleware execution:
+
+- Middlewares implement `MiddlewareInterface` with `handle(Request $request, Closure $next)`
+- Executed via `through($middlewares)->then($destination)`
+- Pipeline automatically converts controller returns to Response objects:
+  - Arrays → JSON responses
+  - Strings → HTML responses
+  - Response objects → passed through
+- Middlewares can be class names (instantiated on-demand) or instances
+- Applied at route level via `->middleware()` or group level
+
+### Request/Response Objects
+
+**Request** (src/Http/Request.php):
+- Created via `Request::capture()` from PHP globals
+- Methods: `method()`, `path()`, `query($key)`, `param($key)`, `input($key)`, `json($key)`, `header($name)`
+- Helpers: `isJson()`, `isAjax()`, `isGet()`, `isPost()`, etc.
+- Route parameters are injected via `setParams()` after matching
+
+**Response** (src/Http/Response.php):
+- Static factories: `Response::json($data)`, `Response::html($html)`, `Response::text($text)`, `Response::error($msg, $code)`, `Response::empty($code)`
+- Fluent API: `->header($name, $value)`, `->status($code)`, `->withHeaders($array)`
+- Auto-conversion: Controllers can return arrays/strings directly
+- Helper `response()` returns a ResponseFactory instance for building responses
+
+### Configuration & Environment
+
+**Environment** (src/Config/EnvLoader.php):
+- Loads `.env` files with `KEY=VALUE` format
+- Supports quoted values, comments (#), and variable expansion (${VAR})
+- Access via `env($key, $default)` helper or `EnvLoader::get()`
+
+**Configuration** (src/Config/Config.php):
+- PHP array-based config files in `/config` directory
+- Dot notation access: `config('database.connections.mysql.host')`
+- Lazy loading: Files loaded on first access
+- Runtime modification: `Config::set('key', $value)`
+
+### Service Providers
+
+Providers (src/Core/ServiceProvider.php) follow a two-phase lifecycle:
+
+1. **Register**: `register(Container $container)` - Binds services to container
+2. **Boot**: `boot(Container $container)` - Runs after all providers registered
+
+Providers are registered in modules via the `providers()` method. They enable separation of service registration logic.
+
+### Observer System
+
+The Observer (src/Core/Observer.php) provides live debugging capabilities:
+
+- Tracks events with: `Observer::record($event, $context)` or `trace($event, $context)` helper
+- Captures timestamp, memory usage, and peak memory for each event
+- Access via: `Observer::dump()`, `Observer::dumpFormatted()`, `Observer::filter($pattern)`, `Observer::summary()`
+- Events tracked: phobos.*, router.*, container.*, pipeline.*, config.*, etc.
+- Can be enabled/disabled with `Observer::enable()` / `Observer::disable()`
+
+### HTTP Exceptions
+
+The framework provides typed HTTP exceptions (src/Exceptions/):
+
+- `HttpException` - Base class with status code, error string, and headers
+- `BadRequestException` (400)
+- `UnauthorizedException` (401)
+- `ForbiddenException` (403)
+- `NotFoundException` (404)
+- `MethodNotAllowedException` (405)
+- `ValidationException` (422) - Includes validation errors array
+- `TooManyRequestsException` (429)
+- `ServiceUnavailableException` (503)
+- `ContainerException` - For DI container errors
+
+All HTTP exceptions have `toArray()` method for JSON serialization. Use `abort($code, $message)` helper for quick exception throwing.
+
+**Note**: The framework does not include a global exception handler. Exceptions thrown in `Phobos::run()` are re-thrown (line 230). You should implement error handling via middleware or external error handler.
+
+### Helper Functions
+
+The framework provides global helpers (src/helpers.php):
+
+**Framework access**: `phobos()`, `phb()`, `container()`, `request()`, `response()`, `route($name, $params)`
+
+**DI shortcuts**: `inject($class)`, `singleton($abstract, $concrete)`, `bind($abstract, $concrete)`, `instance($abstract, $object)`
+
+**Config/Env**: `env($key, $default)`, `config($key, $default)`
+
+**Paths**: `base_path($path)`, `config_path($path)`, `storage_path($path)`, `public_path($path)`, `url($path)`
+
+**Debugging**: `dd(...$vars)`, `dump(...$vars)`, `dpre(...$vars)`, `ppre(...$vars)`
+
+**Utilities**: `abort($code, $message)`, `value($value)`, `tap($value, $callback)`, `with($value, $callback)`, `blank($value)`, `filled($value)`, `trace($event, $context)`
+
+**Environment checks**: `is_dev()`, `is_prod()`
+
+## Development Workflow
+
+### Testing the Framework
+
+This is a library package (type: "library" in composer.json). To test changes:
+
+1. Create a test application that requires this package
+2. Use Composer's path repository to link local development:
+   ```json
+   {
+     "repositories": [
+       {
+         "type": "path",
+         "url": "../PhobosFramework"
+       }
+     ],
+     "require": {
+       "mongoose-studio/phobos-framework": "^3.0"
+     }
+   }
+   ```
+3. Run `composer install` or `composer update` in test app
+
+### Typical Application Structure
+
+```
+/app                    # Application code
+  /Controllers         # Controller classes
+  /Middleware          # Custom middleware
+  /Modules             # Module definitions
+  /Providers           # Service providers
+/config                # Configuration files (PHP arrays)
+  app.php
+  database.php
+/public                # Web root
+  index.php            # Entry point
+/storage               # Logs, cache, uploads
+/.env                  # Environment variables
+```
+
+### Entry Point Pattern
+
+Typical `public/index.php`:
+
+```php
+<?php
+require __DIR__ . '/../vendor/autoload.php';
+
+$app = Phobos::init(__DIR__)
+    ->loadEnvironment()
+    ->loadConfig()
+    ->bootstrap(App\AppModule::class);
+
+$response = $app->run();
+$response->send();
+```
+
+### Module Pattern
+
+```php
+class AppModule implements ModuleInterface {
+    public function routes(Router $router): void {
+        $router->get('/', [HomeController::class, 'index']);
+        $router->group(['prefix' => 'api'], function($r) {
+            $r->get('/users', [UserController::class, 'index']);
+            $r->get('/users/:id', [UserController::class, 'show']);
+            // Wildcard examples:
+            $r->get('/files/*/download', [FileController::class, 'download']); // Single segment
+            $r->get('/docs/**', [DocController::class, 'serve']); // Multiple segments
+        });
+    }
+
+    public function middlewares(): array {
+        return []; // Global middlewares
+    }
+
+    public function providers(): array {
+        return [DatabaseProvider::class, AuthProvider::class];
+    }
+}
+```
+
+### Controller Pattern
+
+Controllers are autowired and can inject dependencies via constructor or method parameters:
+
+```php
+class UserController {
+    public function __construct(
+        private UserRepository $users,
+        private Logger $logger
+    ) {}
+
+    public function show(Request $request, string $id): Response {
+        // $id comes from route parameter
+        // $request is automatically injected
+        $user = $this->users->find($id);
+        return Response::json($user);
+    }
+}
+```
+
+## Important Notes
+
+- **PHP 8.3+**: Framework uses modern PHP features (promoted properties, named arguments, match expressions)
+- **No external dependencies**: Core framework is dependency-free
+- **Spanish documentation**: Most docblocks are in Spanish (original author preference)
+- **Observer for debugging**: Use `Observer::dumpFormatted()` to see full request lifecycle
+- **Auto-JSON conversion**: Controllers returning arrays automatically become JSON responses
+- **Module-first design**: Organize by modules, not by layers
+- **Route parameters**: Use `:param` syntax (colon-prefixed), accessible via `$request->param('id')` or as method parameters
+- **Wildcard routes**: Support `*` (single segment) and `**` (multiple segments) patterns
+- **Container everywhere**: All controller methods and middleware constructors support DI
+- **No global error handler**: Implement exception handling via middleware or wrap `$app->run()` in try-catch
+- **Singleton pattern**: `Phobos` class uses singleton - only one instance per process
+
+## Version Information
+
+- **Current version**: 3.0.2
+- **PHP requirement**: >= 8.3
+- **License**: MIT
+- **Author**: Marcel Rojas (marcelrojas16@gmail.com)
+- **Package name**: mongoose-studio/phobos-framework
