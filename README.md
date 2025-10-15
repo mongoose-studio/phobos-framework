@@ -5,6 +5,11 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.txt)
 [![Version](https://img.shields.io/badge/version-3.0.2-orange)](https://github.com/mongoose-studio/phobos-framework)
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="phobos-banner-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="phobos-banner.png">
+  <img alt="Phobos Framework" height="64px" src="phobos-banner-dark.png">
+</picture>
 
 **PhobosFramework** es un framework PHP moderno, minimalista y de alto rendimiento, diseñado para construir APIs RESTful robustas y escalables. Toma inspiración de la ligereza de Slim y de la modularidad de Angular, pero su núcleo permanece libre de dependencias externas. Su sistema de routing es claro y flexible; admite parámetros tipo `:param`, wildcards avanzados (`*`, `**`) y módulos autocontenidos que ayudan a mantener la estructura en aplicaciones empresariales.
 
