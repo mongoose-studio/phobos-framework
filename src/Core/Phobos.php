@@ -48,6 +48,8 @@ class Phobos {
     private ?Request $request = null;
     private array $providers = [];
     private array $loadedProviders = [];
+    private array $globalMiddlewares = [];
+    private array $moduleMiddlewares = [];
 
     /**
      * Constructor privado de la clase Phobos
@@ -160,11 +162,40 @@ class Phobos {
     }
 
     /**
+     * Registra middlewares globales que se aplicarán a todas las rutas de la aplicación
+     *
+     * Este método permite definir middlewares que se ejecutarán para TODAS las rutas,
+     * independientemente del módulo al que pertenezcan. Es útil para funcionalidades
+     * transversales como CORS, logging, autenticación, etc.
+     *
+     * Los middlewares globales se ejecutan ANTES que los middlewares del módulo
+     * y ANTES que los middlewares específicos de cada ruta.
+     *
+     * @param array|string $middlewares Middleware único o array de middlewares
+     * @return self Retorna la instancia actual para encadenamiento de métodos
+     */
+    public function middleware(array|string $middlewares): self {
+        if (is_string($middlewares)) {
+            $middlewares = [$middlewares];
+        }
+
+        $this->globalMiddlewares = array_merge($this->globalMiddlewares, $middlewares);
+
+        Observer::record('phobos.global_middlewares_registered', [
+            'count' => count($middlewares),
+            'total' => count($this->globalMiddlewares),
+        ]);
+
+        return $this;
+    }
+
+    /**
      * Inicializa la aplicación con el módulo raíz especificado
      *
      * Este método:
      * - Registra los providers del módulo
      * - Ejecuta el boot de los providers
+     * - Registra los middlewares del módulo
      * - Registra las rutas del módulo
      *
      * @param string $moduleClass Clase del módulo raíz
@@ -192,6 +223,15 @@ class Phobos {
         // Boot de providers
         $this->bootProviders();
 
+        // Registrar middlewares del módulo
+        $moduleMiddlewares = $module->middlewares();
+        $this->moduleMiddlewares = array_merge($this->moduleMiddlewares, $moduleMiddlewares);
+
+        Observer::record('phobos.module_middlewares_registered', [
+            'count' => count($moduleMiddlewares),
+            'total' => count($this->moduleMiddlewares),
+        ]);
+
         // Registrar rutas del módulo
         $module->routes($this->router);
 
@@ -199,6 +239,7 @@ class Phobos {
             'module' => $moduleClass,
             'routes_count' => count($this->router->getRoutes()),
             'providers_count' => count($this->loadedProviders),
+            'module_middlewares_count' => count($this->moduleMiddlewares),
         ]);
 
         return $this;
@@ -296,12 +337,20 @@ class Phobos {
             // Inyectar parámetros de ruta en el request
             $this->request->setParams($match->getParams());
 
-            // Obtener middlewares de la ruta
-            $middlewares = $match->getMiddlewares();
+            // Combinar middlewares: globales + módulo + ruta
+            // Orden de ejecución: global -> módulo -> ruta -> controlador
+            $middlewares = array_merge(
+                $this->globalMiddlewares,
+                $this->moduleMiddlewares,
+                $match->getMiddlewares()
+            );
 
             Observer::record('phobos.executing_route', [
                 'action' => $this->getActionDescription($match->getAction()),
-                'middlewares_count' => count($middlewares),
+                'global_middlewares' => count($this->globalMiddlewares),
+                'module_middlewares' => count($this->moduleMiddlewares),
+                'route_middlewares' => count($match->getMiddlewares()),
+                'total_middlewares' => count($middlewares),
             ]);
 
             // Ejecutar pipeline de middlewares + controlador
