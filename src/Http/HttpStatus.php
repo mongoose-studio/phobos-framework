@@ -12,8 +12,6 @@
 
 namespace PhobosFramework\Http;
 
-use Override;
-
 /**
  * HTTP Status Codes
  *

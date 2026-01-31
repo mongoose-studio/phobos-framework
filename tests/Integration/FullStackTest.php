@@ -20,6 +20,7 @@ use PhobosFramework\Http\Request;
 use PhobosFramework\Http\Response;
 use PhobosFramework\Middleware\MiddlewareInterface;
 use PhobosFramework\Module\ModuleInterface;
+use ReflectionClass;
 
 /**
  * Pruebas de Integración Full Stack
@@ -30,7 +31,7 @@ use PhobosFramework\Module\ModuleInterface;
 class FullStackTest extends TestCase {
     protected function setUp(): void {
         // Reset singleton between tests
-        $reflection = new \ReflectionClass(Phobos::class);
+        $reflection = new ReflectionClass(Phobos::class);
         $instance = $reflection->getProperty('instance');
         $instance->setAccessible(true);
         $instance->setValue(null, null);

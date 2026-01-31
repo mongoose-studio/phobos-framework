@@ -77,9 +77,9 @@ class RouteMatch {
     /**
      * Devuelve la ruta asociada.
      *
-     * @return mixed La información de la ruta asociada
+     * @return Route La información de la ruta asociada
      */
-    public function getRoute() {
+    public function getRoute(): Route {
         return $this->route;
     }
 }

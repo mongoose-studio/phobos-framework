@@ -14,6 +14,7 @@ namespace PhobosFramework\Module;
 
 use PhobosFramework\Routing\Router;
 use PhobosFramework\Core\Observer;
+use RuntimeException;
 
 /**
  * Cargador de módulos para el framework Phobos
@@ -35,7 +36,7 @@ class ModuleLoader {
      *
      * @param string $moduleClass Nombre de la clase del módulo a cargar
      * @param string $prefix Prefijo opcional para las rutas del módulo
-     * @throws \RuntimeException Si la clase del módulo no existe o no implementa ModuleInterface
+     * @throws RuntimeException Si la clase del módulo no existe o no implementa ModuleInterface
      */
     public function load(string $moduleClass, string $prefix = ''): void {
         Observer::record('module.loading', [
@@ -44,7 +45,7 @@ class ModuleLoader {
         ]);
 
         if (!class_exists($moduleClass)) {
-            throw new \RuntimeException("Module class {$moduleClass} not found");
+            throw new RuntimeException("Module class $moduleClass not found");
         }
 
         if (isset($this->loadedModules[$moduleClass])) {
@@ -57,7 +58,7 @@ class ModuleLoader {
         $module = new $moduleClass();
 
         if (!($module instanceof ModuleInterface)) {
-            throw new \RuntimeException("Module {$moduleClass} must implement ModuleInterface");
+            throw new RuntimeException("Module $moduleClass must implement ModuleInterface");
         }
 
         // Registrar módulo como cargado

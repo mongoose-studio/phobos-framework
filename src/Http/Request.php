@@ -127,7 +127,7 @@ class Request {
      * @param mixed|null $default Valor por defecto si no existe el parámetro
      * @return mixed Valor del parámetro o array completo si no se especifica key
      */
-    public function query(string $key = null, mixed $default = null): mixed {
+    public function query(?string $key = null, mixed $default = null): mixed {
         if ($key === null) {
             return $this->query;
         }
@@ -247,7 +247,7 @@ class Request {
      * @param mixed|null $default Valor por defecto si no existe la clave
      * @return mixed Objeto JSON completo o valor específico si se proporciona key
      */
-    public function json(string $key = null, mixed $default = null): mixed {
+    public function json(?string $key = null, mixed $default = null): mixed {
         if ($this->jsonCache === null) {
             $this->jsonCache = json_decode($this->body) ?? new stdClass();
         }

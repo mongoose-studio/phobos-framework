@@ -208,6 +208,7 @@ class Container {
      * @param string $abstract El identificador abstracto a resolver
      * @param array $parameters Parámetros opcionales para la construcción
      * @return mixed La instancia construida y resuelta
+     * @throws ContainerException
      */
     public function get(string $abstract, array $parameters = []): mixed {
         return $this->make($abstract, $parameters);
@@ -271,13 +272,13 @@ class Container {
 
         // Si no es una clase, lanzar error
         if (!is_string($concrete) || !class_exists($concrete)) {
-            throw new ContainerException("Target [{$concrete}] is not instantiable.");
+            throw new ContainerException("Target [$concrete] is not instantiable.");
         }
 
         // Detectar dependencias circulares
         if (in_array($concrete, $this->buildStack)) {
             throw new ContainerException(
-                "Circular dependency detected: " . implode(' -> ', $this->buildStack) . " -> {$concrete}"
+                "Circular dependency detected: " . implode(' -> ', $this->buildStack) . " -> $concrete"
             );
         }
 
@@ -288,7 +289,7 @@ class Container {
 
             // Verificar si es instanciable
             if (!$reflector->isInstantiable()) {
-                throw new ContainerException("Target [{$concrete}] is not instantiable.");
+                throw new ContainerException("Target [$concrete] is not instantiable.");
             }
 
             $constructor = $reflector->getConstructor();
@@ -311,7 +312,7 @@ class Container {
 
         } catch (ReflectionException $e) {
             array_pop($this->buildStack);
-            throw new ContainerException("Error building [{$concrete}]: " . $e->getMessage(), 0, $e);
+            throw new ContainerException("Error building [$concrete]: " . $e->getMessage(), 0, $e);
         }
     }
 
@@ -352,7 +353,7 @@ class Container {
                 }
 
                 throw new ContainerException(
-                    "Unresolvable dependency [{$name}] in class " . $parameter->getDeclaringClass()->getName()
+                    "Unresolvable dependency [$name] in class " . $parameter->getDeclaringClass()->getName()
                 );
             }
 
@@ -366,7 +367,7 @@ class Container {
                 }
 
                 throw new ContainerException(
-                    "Unresolvable primitive dependency [{$typeName} \${$name}]"
+                    "Unresolvable primitive dependency [$typeName \$$name]"
                 );
             }
 

@@ -43,7 +43,7 @@ class EnvLoader {
         }
 
         if (!file_exists($path)) {
-            throw new RuntimeException("Environment file not found: {$path}");
+            throw new RuntimeException("Environment file not found: $path");
         }
 
         $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -72,7 +72,7 @@ class EnvLoader {
 
                 // Establecer en $_ENV y putenv
                 $_ENV[$key] = $value;
-                putenv("{$key}={$value}");
+                putenv("$key=$value");
             }
         }
 

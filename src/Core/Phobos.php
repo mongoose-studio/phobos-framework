@@ -112,7 +112,7 @@ class Phobos {
      * @param string|null $envFile Ruta opcional al archivo .env
      * @return self Retorna la instancia actual para encadenamiento
      */
-    public function loadEnvironment(string $envFile = null): self {
+    public function loadEnvironment(?string $envFile = null): self {
         Observer::record('phobos.loading_environment');
 
         $envFile = $envFile ?? dirname($this->basePath) . '/.env';
@@ -147,7 +147,7 @@ class Phobos {
      *                               en el directorio padre de la ruta base
      * @return self Retorna la instancia actual para encadenamiento de métodos
      */
-    public function loadConfig(string $configPath = null): self {
+    public function loadConfig(?string $configPath = null): self {
         Observer::record('phobos.loading_config');
 
         $configPath = $configPath ?? dirname($this->basePath) . '/config';
@@ -208,7 +208,7 @@ class Phobos {
         ]);
 
         if (!class_exists($moduleClass)) {
-            throw new RuntimeException("Module class {$moduleClass} not found");
+            throw new RuntimeException("Module class $moduleClass not found");
         }
 
         $module = $this->container->make($moduleClass);
@@ -260,7 +260,7 @@ class Phobos {
     private function registerProviders(array $providers): void {
         foreach ($providers as $providerClass) {
             if (!class_exists($providerClass)) {
-                throw new RuntimeException("Provider class {$providerClass} not found");
+                throw new RuntimeException("Provider class $providerClass not found");
             }
 
             // Instanciar provider usando container
@@ -316,7 +316,7 @@ class Phobos {
      * @return Response Respuesta HTTP generada
      * @throws Throwable Si ocurre algún error durante la ejecución
      */
-    public function run(Request $request = null): Response {
+    public function run(?Request $request = null): Response {
         Observer::record('phobos.running');
 
         // Capturar request si no se proporciona
@@ -354,7 +354,7 @@ class Phobos {
             ]);
 
             // Ejecutar pipeline de middlewares + controlador
-            $response = (new Pipeline($this->request))
+            $response = new Pipeline($this->request)
                 ->through($middlewares)
                 ->then(function($request) use ($match) {
                     return $this->executeAction($match->getAction(), $request, $match->getParams());
@@ -447,7 +447,7 @@ class Phobos {
     /**
      * Getters
      */
-    
+
     /**
      * Obtiene la instancia del Router
      *

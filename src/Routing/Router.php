@@ -222,13 +222,13 @@ class Router {
      */
     public function module(string $prefix, string $moduleClass): void {
         if (!class_exists($moduleClass)) {
-            throw new RuntimeException("Module class {$moduleClass} not found");
+            throw new RuntimeException("Module class $moduleClass not found");
         }
 
         $module = new $moduleClass();
 
         if (!method_exists($module, 'routes')) {
-            throw new RuntimeException("Module {$moduleClass} must implement routes() method");
+            throw new RuntimeException("Module $moduleClass must implement routes() method");
         }
 
         // Obtener middlewares del módulo si existen
@@ -412,7 +412,7 @@ class Router {
      */
     public function setNamedRoute(string $name, Route $route): void {
         if (isset($this->namedRoutes[$name])) {
-            throw new RuntimeException("Route name '{$name}' is already registered");
+            throw new RuntimeException("Route name '$name' is already registered");
         }
 
         $this->namedRoutes[$name] = $route;
@@ -447,7 +447,7 @@ class Router {
      */
     public function route(string $name, array $params = []): string {
         if (!isset($this->namedRoutes[$name])) {
-            throw new RuntimeException("Named route '{$name}' not found");
+            throw new RuntimeException("Named route '$name' not found");
         }
 
         $route = $this->namedRoutes[$name];
@@ -455,12 +455,12 @@ class Router {
 
         // Reemplazar parámetros
         foreach ($params as $key => $value) {
-            $path = str_replace(":{$key}", $value, $path);
+            $path = str_replace(":$key", $value, $path);
         }
 
         // Verificar que no queden parámetros sin reemplazar
         if (preg_match('/:([a-zA-Z_][a-zA-Z0-9_]*)/', $path)) {
-            throw new RuntimeException("Missing parameters for route '{$name}'");
+            throw new RuntimeException("Missing parameters for route '$name'");
         }
 
         return $path;
@@ -512,7 +512,7 @@ class Router {
      * @return string Representación en texto de la acción. Para métodos de clase
      *                devuelve "Clase::método", para strings devuelve el string original,
      *                y para Closures devuelve "Closure"
-     * 
+     *
      * ### Ejemplos:
      * ```
      * // Para array con nombre de clase
@@ -527,7 +527,7 @@ class Router {
      * ```
      * // Para Closure
      * function() {...} -> "Closure"
-     * ``` 
+     * ```
      */
     private function getActionDescription(mixed $action): string {
         if (is_array($action)) {

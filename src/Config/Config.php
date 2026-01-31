@@ -13,6 +13,7 @@
 namespace PhobosFramework\Config;
 
 use PhobosFramework\Core\Observer;
+use RuntimeException;
 
 /**
  * Sistema de configuración con soporte para archivos PHP
@@ -180,11 +181,11 @@ class Config {
      * observación y se almacena un array vacío.
      *
      * @param string $file Nombre del archivo de configuración sin extensión
-     * @throws \RuntimeException Si el archivo no retorna un array
+     * @throws RuntimeException Si el archivo no retorna un array
      */
     private static function load(string $file): void {
         if (self::$configPath === null) {
-            throw new \RuntimeException('Config path not set. Call Config::setPath() first.');
+            throw new RuntimeException('Config path not set. Call Config::setPath() first.');
         }
 
         $path = self::$configPath . '/' . $file . '.php';
@@ -207,7 +208,7 @@ class Config {
         $config = require $path;
 
         if (!is_array($config)) {
-            throw new \RuntimeException("Config file {$file} must return an array");
+            throw new RuntimeException("Config file $file must return an array");
         }
 
         self::$cache[$file] = $config;

@@ -71,7 +71,7 @@ class Route {
         // Convertir * a regex (captura un segmento)
         $wildcardCount = 0;
         $pattern = preg_replace_callback('/\/\*/', function () use (&$wildcardCount) {
-            $this->paramNames[] = "segment_{$wildcardCount}";
+            $this->paramNames[] = "segment_$wildcardCount";
             $wildcardCount++;
             return '/([^/]+)';
         }, $pattern);

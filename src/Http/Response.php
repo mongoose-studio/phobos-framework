@@ -19,23 +19,24 @@ namespace PhobosFramework\Http;
  * Esta clase proporciona métodos para crear y enviar diferentes tipos de respuestas HTTP,
  * incluyendo JSON, texto plano, HTML y respuestas de error.
  */
-class Response {
+class Response
+{
 
-    private array $headers = [];
-    private int $statusCode;
+    private array $headers;
+    private int|HttpStatus $statusCode;
     private mixed $content;
 
     /**
      * Constructor de la clase Response
      *
      * @param mixed $content Contenido de la respuesta
-     * @param int $statusCode Código de estado HTTP (por defecto 200)
+     * @param int|HttpStatus $statusCode Código de estado HTTP (por defecto 200)
      * @param array $headers Headers HTTP adicionales
      */
     public function __construct(
-        mixed $content = '',
-        int $statusCode = 200,
-        array $headers = []
+        mixed          $content = '',
+        int|HttpStatus $statusCode = 200,
+        array          $headers = []
     ) {
         $this->content = $content;
         $this->statusCode = $statusCode;
@@ -46,11 +47,11 @@ class Response {
      * Crea una respuesta JSON
      *
      * @param mixed $data Datos a convertir a JSON
-     * @param int $statusCode Código de estado HTTP (por defecto 200)
+     * @param int|HttpStatus $statusCode Código de estado HTTP (por defecto 200)
      * @param array $headers Headers HTTP adicionales
      * @return self            Instancia de Response
      */
-    public static function json(mixed $data, int $statusCode = 200, array $headers = []): self {
+    public static function json(mixed $data, int|HttpStatus $statusCode = 200, array $headers = []): self {
         $response = new self(
             json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             $statusCode,
@@ -65,10 +66,10 @@ class Response {
     /**
      * Crea una respuesta vacía
      *
-     * @param int $statusCode Código de estado HTTP (por defecto 204)
+     * @param int|HttpStatus $statusCode Código de estado HTTP (por defecto 204)
      * @return self            Instancia de Response
      */
-    public static function empty(int $statusCode = 204): self {
+    public static function empty(int|HttpStatus $statusCode = 204): self {
         return new self('', $statusCode);
     }
 
@@ -76,10 +77,10 @@ class Response {
      * Crea una respuesta de texto plano
      *
      * @param string $content Contenido de texto
-     * @param int $statusCode Código de estado HTTP (por defecto 200)
+     * @param int|HttpStatus $statusCode Código de estado HTTP (por defecto 200)
      * @return self            Instancia de Response
      */
-    public static function text(string $content, int $statusCode = 200): self {
+    public static function text(string $content, int|HttpStatus $statusCode = 200): self {
         $response = new self($content, $statusCode);
         $response->header('Content-Type', 'text/plain; charset=utf-8');
         return $response;
@@ -89,10 +90,10 @@ class Response {
      * Crea una respuesta HTML
      *
      * @param string $content Contenido HTML
-     * @param int $statusCode Código de estado HTTP (por defecto 200)
+     * @param int|HttpStatus $statusCode Código de estado HTTP (por defecto 200)
      * @return self            Instancia de Response
      */
-    public static function html(string $content, int $statusCode = 200): self {
+    public static function html(string $content, int|HttpStatus $statusCode = 200): self {
         $response = new self($content, $statusCode);
         $response->header('Content-Type', 'text/html; charset=utf-8');
         return $response;
@@ -102,11 +103,11 @@ class Response {
      * Crea una respuesta de error
      *
      * @param string $message Mensaje de error
-     * @param int $statusCode Código de estado HTTP (por defecto 400)
+     * @param int|HttpStatus $statusCode Código de estado HTTP (por defecto 400)
      * @param array $extra Datos adicionales para incluir en la respuesta
      * @return self            Instancia de Response
      */
-    public static function error(string $message, int $statusCode = 400, array $extra = []): self {
+    public static function error(string $message, int|HttpStatus $statusCode = 400, array $extra = []): self {
         return self::json(array_merge([
             'error' => self::getStatusText($statusCode),
             'message' => $message,
@@ -190,7 +191,7 @@ class Response {
 
         // Enviar headers
         foreach ($this->headers as $name => $value) {
-            header("{$name}: {$value}");
+            header("$name: $value");
         }
 
         // Enviar content
@@ -217,7 +218,7 @@ class Response {
             return json_encode($this->content);
         }
 
-        return (string) $this->content;
+        return (string)$this->content;
     }
 
     /**

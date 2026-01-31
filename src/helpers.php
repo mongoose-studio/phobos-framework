@@ -16,6 +16,7 @@ use PhobosFramework\Config\EnvLoader;
 use PhobosFramework\Core\Container;
 use PhobosFramework\Core\Phobos;
 use PhobosFramework\Exceptions\BadRequestException;
+use PhobosFramework\Exceptions\ContainerException;
 use PhobosFramework\Exceptions\ForbiddenException;
 use PhobosFramework\Exceptions\NotFoundException;
 use PhobosFramework\Exceptions\UnauthorizedException;
@@ -30,8 +31,9 @@ if (!function_exists('phobos')) {
      * @param string|null $abstract Clase a resolver del container
      * @param array $parameters Parámetros adicionales
      * @return mixed
+     * @throws ContainerException
      */
-    function phobos(string $abstract = null, array $parameters = []): mixed {
+    function phobos(?string $abstract = null, array $parameters = []): mixed {
         $instance = Phobos::getInstance();
 
         if ($abstract === null) {
@@ -45,8 +47,9 @@ if (!function_exists('phobos')) {
 if (!function_exists('phb')) {
     /**
      * Alias corto de phobos()
+     * @throws ContainerException
      */
-    function phb(string $abstract = null, array $parameters = []): mixed {
+    function phb(?string $abstract = null, array $parameters = []): mixed {
         return phobos($abstract, $parameters);
     }
 }
@@ -81,6 +84,7 @@ if (!function_exists('is_prod')) {
 if (!function_exists('inject')) {
     /**
      * Alias más explícito para resolver del container
+     * @throws ContainerException
      */
     function inject(string $abstract, array $parameters = []): mixed {
         return phobos($abstract, $parameters);
@@ -90,6 +94,7 @@ if (!function_exists('inject')) {
 if (!function_exists('instance')) {
     /**
      * Registrar una instancia existente
+     * @throws ContainerException
      */
     function instance(string $abstract, object $instance): void {
         container()->instance($abstract, $instance);
@@ -117,6 +122,7 @@ if (!function_exists('config')) {
 if (!function_exists('request')) {
     /**
      * Obtener request actual
+     * @throws ContainerException
      */
     function request(): ?Request {
         return phobos()->getRequest();
@@ -135,6 +141,7 @@ if (!function_exists('response')) {
 if (!function_exists('route')) {
     /**
      * Generar URL para una ruta nombrada
+     * @throws ContainerException
      */
     function route(string $name, array $params = []): string {
         return phobos()->getRouter()->route($name, $params);
@@ -144,6 +151,7 @@ if (!function_exists('route')) {
 if (!function_exists('storage_path')) {
     /**
      * Obtener path del directorio storage
+     * @throws ContainerException
      */
     function storage_path(string $path = ''): string {
         $basePath = dirname(phobos()->getBasePath());
@@ -154,6 +162,7 @@ if (!function_exists('storage_path')) {
 if (!function_exists('base_path')) {
     /**
      * Obtener path base de la aplicación
+     * @throws ContainerException
      */
     function base_path(string $path = ''): string {
         $basePath = dirname(phobos()->getBasePath());
@@ -218,6 +227,7 @@ if (!function_exists('ppre')) {
 if (!function_exists('container')) {
     /**
      * Obtener el container
+     * @throws ContainerException
      */
     function container(): ?Container {
         return phobos()->getContainer();
@@ -227,6 +237,7 @@ if (!function_exists('container')) {
 if (!function_exists('singleton')) {
     /**
      * Registrar un singleton en el container
+     * @throws ContainerException
      */
     function singleton(string $abstract, mixed $concrete = null): void {
         container()->singleton($abstract, $concrete);
@@ -236,6 +247,7 @@ if (!function_exists('singleton')) {
 if (!function_exists('bind')) {
     /**
      * Registrar un binding en el container
+     * @throws ContainerException
      */
     function bind(string $abstract, mixed $concrete = null): void {
         container()->bind($abstract, $concrete);
@@ -245,6 +257,7 @@ if (!function_exists('bind')) {
 if (!function_exists('config_path')) {
     /**
      * Obtener path del directorio config
+     * @throws ContainerException
      */
     function config_path(string $path = ''): string {
         $basePath = dirname(phobos()->getBasePath());
@@ -255,6 +268,7 @@ if (!function_exists('config_path')) {
 if (!function_exists('public_path')) {
     /**
      * Obtener path del directorio public
+     * @throws ContainerException
      */
     function public_path(string $path = ''): string {
         $basePath = dirname(phobos()->getBasePath());
@@ -275,6 +289,7 @@ if (!function_exists('url')) {
 if (!function_exists('abort')) {
     /**
      * Lanzar una excepción HTTP
+     * @throws NotFoundException| UnauthorizedException| ForbiddenException| BadRequestException| ValidationException | HttpException
      */
     function abort(int $code, string $message = ''): never {
         throw match ($code) {
