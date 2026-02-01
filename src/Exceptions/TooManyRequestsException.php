@@ -43,7 +43,7 @@ class TooManyRequestsException extends HttpException {
             'Too many requests',
             429,
             'Too Many Requests',
-            ['Retry-After' => (string) $retryAfter],
+            ['Retry-After' => (string)$retryAfter],
             $previous
         );
     }

@@ -168,12 +168,12 @@ class EnvLoader {
     private static function expandVariables(string $value): string {
         // Expandir ${VAR}
         /** @noinspection RegExpRedundantEscape */
-        $value = preg_replace_callback('/\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}/', function($matches) {
+        $value = preg_replace_callback('/\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}/', function ($matches) {
             return self::get($matches[1], '');
         }, $value);
 
         // Expandir $VAR (sin llaves)
-        return preg_replace_callback('/\$([a-zA-Z_][a-zA-Z0-9_]*)/', function($matches) {
+        return preg_replace_callback('/\$([a-zA-Z_][a-zA-Z0-9_]*)/', function ($matches) {
             return self::get($matches[1], '');
         }, $value);
     }

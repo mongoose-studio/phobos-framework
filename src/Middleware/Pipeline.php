@@ -114,7 +114,7 @@ class Pipeline {
      * @return Closure Wrapper que convierte el resultado en Response
      */
     private function prepareDestination(Closure $destination): Closure {
-        return function(Request $request) use ($destination) {
+        return function (Request $request) use ($destination) {
             Observer::record('pipeline.destination', [
                 'class' => 'Controller',
             ]);
@@ -157,8 +157,8 @@ class Pipeline {
      * @return Closure Función que maneja la ejecución encadenada de middlewares
      */
     private function carry(): Closure {
-        return function(Closure $stack, mixed $middleware) {
-            return function(Request $request) use ($stack, $middleware) {
+        return function (Closure $stack, mixed $middleware) {
+            return function (Request $request) use ($stack, $middleware) {
                 // Instanciar middleware si es una clase
                 if (is_string($middleware)) {
                     Observer::record('pipeline.middleware', [

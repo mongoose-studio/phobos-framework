@@ -19,8 +19,7 @@ namespace PhobosFramework\Http;
  * Esta clase proporciona métodos para crear y enviar diferentes tipos de respuestas HTTP,
  * incluyendo JSON, texto plano, HTML y respuestas de error.
  */
-class Response
-{
+class Response {
 
     private array $headers;
     private int|HttpStatus $statusCode;
@@ -39,7 +38,7 @@ class Response
         array          $headers = []
     ) {
         $this->content = $content;
-        $this->statusCode = $statusCode;
+        $this->statusCode = intval($statusCode);
         $this->headers = $headers;
     }
 

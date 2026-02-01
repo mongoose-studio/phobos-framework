@@ -30,8 +30,8 @@ class ValidationException extends HttpException {
      */
     public function __construct(
         private array $errors = [],
-        string $message = 'Validation failed',
-        ?Exception $previous = null
+        string        $message = 'Validation failed',
+        ?Exception    $previous = null
     ) {
         parent::__construct($message, 422, 'Unprocessable Entity', [], $previous);
     }

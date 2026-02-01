@@ -356,7 +356,7 @@ class Phobos {
             // Ejecutar pipeline de middlewares + controlador
             $response = new Pipeline($this->request)
                 ->through($middlewares)
-                ->then(function($request) use ($match) {
+                ->then(function ($request) use ($match) {
                     return $this->executeAction($match->getAction(), $request, $match->getParams());
                 });
 

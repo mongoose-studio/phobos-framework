@@ -17,6 +17,8 @@ use ReflectionClass;
 use ReflectionFunction;
 use ReflectionMethod;
 use ReflectionException;
+use ReflectionUnionType;
+use ReflectionIntersectionType;
 use Closure;
 
 /**
@@ -355,6 +357,63 @@ class Container {
                 throw new ContainerException(
                     "Unresolvable dependency [$name] in class " . $parameter->getDeclaringClass()->getName()
                 );
+            }
+
+            // Si es un Union type (ej: int|HttpStatus), intentar resolver
+            if ($type instanceof ReflectionUnionType) {
+                $resolved = false;
+
+                foreach ($type->getTypes() as $unionType) {
+                    if (!$unionType->isBuiltin()) {
+                        try {
+                            $dependencies[] = $this->make($unionType->getName());
+                            $resolved = true;
+                            break;
+                        } catch (ContainerException) {
+
+                        }
+                    }
+                }
+
+                if (!$resolved) {
+                    if ($parameter->isDefaultValueAvailable()) {
+                        $dependencies[] = $parameter->getDefaultValue();
+                        continue;
+                    }
+                    throw new ContainerException(
+                        "Unresolvable union type dependency [\$$name]"
+                    );
+                }
+                continue;
+            }
+
+            if ($type instanceof ReflectionIntersectionType) {
+                $types = $type->getTypes();
+                $firstType = $types[0]->getName();
+
+                try {
+                    $instance = $this->make($firstType);
+                    foreach ($types as $intersectionType) {
+                        $typeName = $intersectionType->getName();
+                        if (!$instance instanceof $typeName) {
+                            throw new ContainerException(
+                                "Resolved instance does not satisfy intersection type [$typeName]"
+                            );
+                        }
+                    }
+
+                    $dependencies[] = $instance;
+                    continue;
+                } catch (ContainerException) {
+                    if ($parameter->isDefaultValueAvailable()) {
+                        $dependencies[] = $parameter->getDefaultValue();
+                        continue;
+                    }
+
+                    throw new ContainerException(
+                        "Unresolvable intersection type dependency [\$$name]"
+                    );
+                }
             }
 
             $typeName = $type->getName();

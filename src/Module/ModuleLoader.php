@@ -82,7 +82,7 @@ class ModuleLoader {
                 $attributes['middleware'] = $middlewares;
             }
 
-            $this->router->group($attributes, function($router) use ($module) {
+            $this->router->group($attributes, function ($router) use ($module) {
                 $module->routes($router);
             });
         } else {

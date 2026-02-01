@@ -20,8 +20,7 @@ use RuntimeException;
  * Esta clase proporciona métodos convenientes para crear diferentes tipos de respuestas HTTP,
  * como JSON, texto plano, HTML, descargas y redirecciones.
  */
-class ResponseFactory
-{
+class ResponseFactory {
 
     /**
      * Crea una respuesta HTTP con contenido JSON.

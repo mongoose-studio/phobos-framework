@@ -24,7 +24,8 @@ class RouteMatch {
     public function __construct(
         public readonly Route $route,
         public readonly array $params = [],
-    ) {}
+    ) {
+    }
 
     /**
      * Obtiene el valor de un parámetro específico de la ruta.

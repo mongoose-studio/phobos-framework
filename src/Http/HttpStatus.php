@@ -416,7 +416,7 @@ enum HttpStatus: int {
      * Obtener descripción textual del código de estado
      */
     public function text(): string {
-        return match($this) {
+        return match ($this) {
             self::CONTINUE => 'Continue',
             self::SWITCHING_PROTOCOLS => 'Switching Protocols',
             self::PROCESSING => 'Processing',

@@ -33,11 +33,11 @@ class HttpException extends Exception {
      * @param Exception|null $previous Excepción previa si existe
      */
     public function __construct(
-        string $message = '',
-        private int $statusCode = 500,
+        string         $message = '',
+        private int    $statusCode = 500,
         private string $error = 'Internal Server Error',
-        private array $headers = [],
-        ?Exception $previous = null
+        private array  $headers = [],
+        ?Exception     $previous = null
     ) {
         parent::__construct($message, $statusCode, $previous);
     }
