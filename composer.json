@@ -1,11 +1,11 @@
 {
     "name": "mongoose-studio/phobos-framework",
     "description": "Phobos PHP Framework",
-    "version": "3.0.5",
+    "version": "3.1.0",
     "type": "library",
     "license": "MIT",
     "require": {
-        "php": ">=8.3"
+        "php": ">=8.4"
     },
     "require-dev": {
         "phpunit/phpunit": "^11.0"

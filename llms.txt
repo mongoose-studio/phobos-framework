@@ -1,7 +1,7 @@
-# Phobos Framework v3.0.2
+# Phobos Framework v3.1.0
 ## About Phobos Framework
 
-Phobos Framework v3.0.2 is a modern, minimalist PHP framework (8.3+) designed for building RESTful APIs. It's inspired by Slim's lightweight design and Angular's modularity but remains dependency-free at its core. This is a successor to Phobos 1/2 and XWork (3-7), maintaining the modular DNA while adding modern features like DI container with autowiring, middleware pipelines, and an Observer system for debugging.
+Phobos Framework v3.1.0 is a modern, minimalist PHP framework (8.4+) designed for building RESTful APIs. It's inspired by Slim's lightweight design and Angular's modularity but remains dependency-free at its core. This is a successor to Phobos 1/2 and XWork (3-7), maintaining the modular DNA while adding modern features like DI container with autowiring, middleware pipelines, and an Observer system for debugging.
 
 ## Core Architecture
 
@@ -254,7 +254,7 @@ class UserController {
 
 ## Important Notes
 
-- **PHP 8.3+**: Framework uses modern PHP features (promoted properties, named arguments, match expressions)
+- **PHP 8.4+**: Framework uses modern PHP features (promoted properties, named arguments, match expressions)
 - **No external dependencies**: Core framework is dependency-free
 - **Spanish documentation**: Most docblocks are in Spanish (original author preference)
 - **Observer for debugging**: Use `Observer::dumpFormatted()` to see full request lifecycle
@@ -268,8 +268,8 @@ class UserController {
 
 ## Version Information
 
-- **Current version**: 3.0.2
-- **PHP requirement**: >= 8.3
+- **Current version**: 3.1.0
+- **PHP requirement**: >= 8.4
 - **License**: MIT
 - **Author**: Marcel Rojas (marcelrojas16@gmail.com)
 - **Package name**: mongoose-studio/phobos-framework

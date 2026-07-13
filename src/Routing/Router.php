@@ -15,6 +15,7 @@ namespace PhobosFramework\Routing;
 use PhobosFramework\Http\Request;
 use PhobosFramework\Exceptions\NotFoundException;
 use PhobosFramework\Core\Observer;
+use PhobosFramework\Core\Phobos;
 use RuntimeException;
 
 /**
@@ -225,7 +226,13 @@ class Router {
             throw new RuntimeException("Module class $moduleClass not found");
         }
 
-        $module = new $moduleClass();
+        // Resolver desde el container para que el módulo admita inyección de dependencias,
+        // igual que el módulo raíz en Phobos::bootstrap()
+        $container = Phobos::getInstance()?->getContainer();
+
+        $module = $container !== null
+            ? $container->make($moduleClass)
+            : new $moduleClass();
 
         if (!method_exists($module, 'routes')) {
             throw new RuntimeException("Module $moduleClass must implement routes() method");
@@ -453,9 +460,14 @@ class Router {
         $route = $this->namedRoutes[$name];
         $path = $route->getPath();
 
-        // Reemplazar parámetros
+        // Reemplazar parámetros. El lookahead evita que un nombre corto pise a uno
+        // largo que lo contenga (`:id` dentro de `:idx`)
         foreach ($params as $key => $value) {
-            $path = str_replace(":$key", $value, $path);
+            $path = preg_replace_callback(
+                '/:' . preg_quote((string)$key, '/') . '(?![a-zA-Z0-9_])/',
+                fn() => (string)$value,
+                $path
+            );
         }
 
         // Verificar que no queden parámetros sin reemplazar

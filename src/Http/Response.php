@@ -22,7 +22,7 @@ namespace PhobosFramework\Http;
 class Response {
 
     private array $headers;
-    private int|HttpStatus $statusCode;
+    private int $statusCode;
     private mixed $content;
 
     /**
@@ -38,8 +38,20 @@ class Response {
         array          $headers = []
     ) {
         $this->content = $content;
-        $this->statusCode = intval($statusCode);
+        $this->statusCode = self::normalizeStatus($statusCode);
         $this->headers = $headers;
+    }
+
+    /**
+     * Normaliza un código de estado a su representación entera
+     *
+     * @param int|HttpStatus $statusCode Código de estado HTTP
+     * @return int Código de estado como entero
+     */
+    private static function normalizeStatus(int|HttpStatus $statusCode): int {
+        return $statusCode instanceof HttpStatus
+            ? $statusCode->value
+            : $statusCode;
     }
 
     /**
@@ -141,11 +153,11 @@ class Response {
     /**
      * Establece el código de estado HTTP
      *
-     * @param int $code Código de estado HTTP
+     * @param int|HttpStatus $code Código de estado HTTP
      * @return self          Instancia de Response
      */
-    public function status(int $code): self {
-        $this->statusCode = $code;
+    public function status(int|HttpStatus $code): self {
+        $this->statusCode = self::normalizeStatus($code);
         return $this;
     }
 
@@ -185,26 +197,26 @@ class Response {
      * Establece el código de estado, los headers y envía el contenido
      */
     public function send(): void {
+        $headers = $this->headers;
+        $content = $this->content;
+
+        // Un array siempre se serializa a JSON; el Content-Type solo se asume
+        // cuando no viene uno explícito
+        if (is_array($content)) {
+            $headers['Content-Type'] ??= 'application/json; charset=utf-8';
+            $content = json_encode($content, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+
         // Enviar status code
         http_response_code($this->statusCode);
 
         // Enviar headers
-        foreach ($this->headers as $name => $value) {
+        foreach ($headers as $name => $value) {
             header("$name: $value");
         }
 
         // Enviar content
-        if (is_array($this->content)) {
-            // Si es array y no se estableció Content-Type, enviar como JSON
-            if (!isset($this->headers['Content-Type'])) {
-                header('Content-Type: application/json; charset=utf-8');
-                echo json_encode($this->content, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            } else {
-                echo $this->content;
-            }
-        } else {
-            echo $this->content;
-        }
+        echo $content;
     }
 
     /**
@@ -223,10 +235,12 @@ class Response {
     /**
      * Obtiene el texto descriptivo para un código de estado HTTP
      *
-     * @param int $code Código de estado HTTP
+     * @param int|HttpStatus $code Código de estado HTTP
      * @return string      Texto descriptivo del código de estado
      */
-    private static function getStatusText(int $code): string {
-        return HttpStatus::fromCode($code)->text();
+    private static function getStatusText(int|HttpStatus $code): string {
+        return $code instanceof HttpStatus
+            ? $code->text()
+            : HttpStatus::fromCode($code)->text();
     }
 }

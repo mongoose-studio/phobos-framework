@@ -15,7 +15,9 @@ namespace PhobosFramework\Middleware;
 use JsonSerializable;
 use PhobosFramework\Http\Request;
 use PhobosFramework\Http\Response;
+use PhobosFramework\Core\Container;
 use PhobosFramework\Core\Observer;
+use PhobosFramework\Core\Phobos;
 use Closure;
 
 /**
@@ -41,10 +43,19 @@ use Closure;
 class Pipeline {
 
     private Request $request;
+    private ?Container $container;
     private array $middlewares = [];
 
-    public function __construct(Request $request) {
+    /**
+     * @param Request $request Petición HTTP que recorrerá el pipeline
+     * @param Container|null $container Container usado para resolver los middlewares
+     *                                  declarados como nombre de clase. Si es null, se
+     *                                  usa el de la aplicación; si tampoco hay, los
+     *                                  middlewares se instancian sin inyección.
+     */
+    public function __construct(Request $request, ?Container $container = null) {
         $this->request = $request;
+        $this->container = $container ?? Phobos::getInstance()?->getContainer();
     }
 
     /**
@@ -150,7 +161,7 @@ class Pipeline {
      * Crea el "carrier" que encapsula cada middleware en el pipeline
      *
      * Este método devuelve una función que:
-     * 1. Instancia el middleware si se proporciona como string
+     * 1. Resuelve el middleware desde el container si se proporciona como string
      * 2. Encadena la ejecución del middleware actual con el siguiente en la pila
      * 3. Registra eventos de observación antes y después de ejecutar cada middleware
      *
@@ -159,14 +170,16 @@ class Pipeline {
     private function carry(): Closure {
         return function (Closure $stack, mixed $middleware) {
             return function (Request $request) use ($stack, $middleware) {
-                // Instanciar middleware si es una clase
+                // Resolver middleware si es una clase
                 if (is_string($middleware)) {
                     Observer::record('pipeline.middleware', [
                         'middleware' => $middleware,
                         'type' => 'before',
                     ]);
 
-                    $middleware = new $middleware();
+                    $middleware = $this->container !== null
+                        ? $this->container->make($middleware)
+                        : new $middleware();
                 }
 
                 // Ejecutar middleware

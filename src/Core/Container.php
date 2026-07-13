@@ -298,7 +298,6 @@ class Container {
 
             // Si no tiene constructor, instanciar directamente
             if ($constructor === null) {
-                array_pop($this->buildStack);
                 return new $concrete();
             }
 
@@ -308,13 +307,14 @@ class Container {
                 $parameters
             );
 
-            array_pop($this->buildStack);
-
             return $reflector->newInstanceArgs($dependencies);
 
         } catch (ReflectionException $e) {
-            array_pop($this->buildStack);
             throw new ContainerException("Error building [$concrete]: " . $e->getMessage(), 0, $e);
+        } finally {
+            // Se desapila siempre: si un build fallido dejara su clase en la pila,
+            // el siguiente intento la reportaría como dependencia circular.
+            array_pop($this->buildStack);
         }
     }
 

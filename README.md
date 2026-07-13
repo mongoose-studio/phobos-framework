@@ -1,9 +1,9 @@
 # Phobos Framework
 ### by Mongoose Studio
 
-[![PHP Version](https://img.shields.io/badge/PHP-%3E%3D%208.3-blue)](https://www.php.net/)
+[![PHP Version](https://img.shields.io/badge/PHP-%3E%3D%208.4-blue)](https://www.php.net/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.txt)
-[![Version](https://img.shields.io/badge/version-3.0.2-orange)](https://github.com/mongoose-studio/phobos-framework)
+[![Version](https://img.shields.io/badge/version-3.1.0-orange)](https://github.com/mongoose-studio/phobos-framework)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="phobos-banner-dark.png">
@@ -13,7 +13,7 @@
 
 **PhobosFramework** es un framework PHP moderno, minimalista y de alto rendimiento, diseñado para construir APIs RESTful robustas y escalables. Toma inspiración de la ligereza de Slim y de la modularidad de Angular, pero su núcleo permanece libre de dependencias externas. Su sistema de routing es claro y flexible; admite parámetros tipo `:param`, wildcards avanzados (`*`, `**`) y módulos autocontenidos que ayudan a mantener la estructura en aplicaciones empresariales.
 
-¿Que tiene de bueno esta versión? pues, encontrarás un `DI Container` con `autowiring` automático, `middleware` encadenados y compatibilidad con `PHP 8.3+` para asegurar tipos de forma completa. Suena muy técnico, pero entiéndelo de esta forma: se traduce en código más seguro, menos acoplamiento y pruebas más simples. Además, Phobos trae un `Observer` para debugging "en vivo", soporte `multi-tenant` nativo, versionado de APIs y orientado a API-first con conversión JSON automática. Desde microservicios hasta SSO servers, API gateways o backends para SPAs, Phobos da las herramientas necesarias sin complicar la experiencia del desarrollador.
+¿Que tiene de bueno esta versión? pues, encontrarás un `DI Container` con `autowiring` automático, `middleware` encadenados y compatibilidad con `PHP 8.4+` para asegurar tipos de forma completa. Suena muy técnico, pero entiéndelo de esta forma: se traduce en código más seguro, menos acoplamiento y pruebas más simples. Además, Phobos trae un `Observer` para debugging "en vivo", soporte `multi-tenant` nativo, versionado de APIs y orientado a API-first con conversión JSON automática. Desde microservicios hasta SSO servers, API gateways o backends para SPAs, Phobos da las herramientas necesarias sin complicar la experiencia del desarrollador.
 
 Si trabajaste con `Phobos 1 o 2` —o incluso con `XWork (3 a 7)`— vas a reconocer el ADN: sigue siendo modular, con DAOs y rutas como pilares. Pero Phobos 3 se da un lavado de cara: mantiene lo bueno y suma cosas que hacen la vida del dev mucho más fácil. Piensa en helpers por todos lados, menos singletons por defecto, middleware e injections ordenadas, pipelines claros, un ciclo de vida más robusto y un observador que hace el debug menos doloroso. Añadimos servicios, configuración vía `.env`, `request`/`response` objects para entender exactamente qué pasa, librerías sólidas y un montón de pequeñas mejoras muy prácticas. En resumen: lo mismo de siempre, pero más limpio, más rápido, más amable y mas pulento XD 🇨🇱.
 
@@ -25,7 +25,7 @@ Si trabajaste con `Phobos 1 o 2` —o incluso con `XWork (3 a 7)`— vas a recon
 - 🎯 **Enrutamiento Avanzado** - Parámetros dinámicos, wildcards y grupos
 - 📦 **Arquitectura Modular** - Organiza tu código en módulos independientes
 - 🔍 **Sistema Observer** - Debugging en vivo del ciclo de vida
-- ⚡ **PHP 8.3+** - Aprovecha las características más modernas de PHP
+- ⚡ **PHP 8.4+** - Aprovecha las características más modernas de PHP
 
 ## Instalación
 
@@ -578,7 +578,7 @@ El objetivo es mantener una cobertura de código ≥ 80% en todos los componente
 
 ## Notas Importantes
 
-- **PHP 8.3+ requerido** - Aprovecha promoted properties, named arguments, match expressions
+- **PHP 8.4+ requerido** - Aprovecha promoted properties, named arguments, match expressions
 - **Sin dependencias externas** - El core es completamente independiente
 - **No hay manejador global de errores** - Implementa manejo de excepciones vía middleware
 - **Singleton pattern** - Solo una instancia de `Phobos` por proceso

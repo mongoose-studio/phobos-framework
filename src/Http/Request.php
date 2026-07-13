@@ -35,7 +35,8 @@ use stdClass;
 class Request {
 
     private array $params = [];
-    private ?stdClass $jsonCache = null;
+    private mixed $jsonCache = null;
+    private bool $jsonDecoded = false;
 
     public function __construct(
         private string $method,
@@ -61,7 +62,7 @@ class Request {
     public static function capture(): self {
         return new self(
             method: $_SERVER['REQUEST_METHOD'] ?? 'GET',
-            path: parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH),
+            path: self::extractPath($_SERVER['REQUEST_URI'] ?? '/'),
             query: $_GET,
             post: $_POST,
             files: $_FILES,
@@ -70,6 +71,22 @@ class Request {
             headers: self::extractHeaders(),
             body: file_get_contents('php://input') ?: '',
         );
+    }
+
+    /**
+     * Extrae el path de la URI solicitada
+     *
+     * parse_url() devuelve null (ej: `//host`, `?a=1`) o false (URI malformada) cuando
+     * no hay un path que extraer; en esos casos se cae a la raíz en lugar de propagar
+     * un valor que no es string.
+     *
+     * @param string $uri URI cruda de la petición
+     * @return string Path de la URI, o '/' si no se puede determinar
+     */
+    private static function extractPath(string $uri): string {
+        $path = parse_url($uri, PHP_URL_PATH);
+
+        return is_string($path) && $path !== '' ? $path : '/';
     }
 
     /**
@@ -243,20 +260,33 @@ class Request {
     /**
      * Obtiene y parsea el cuerpo JSON de la solicitud
      *
-     * @param string|null $key Clave a obtener del objeto JSON (opcional)
+     * Un cuerpo con un objeto JSON se decodifica como stdClass. Un cuerpo con un array
+     * JSON (ej: `[{...}, {...}]`) se decodifica como array, y un escalar como escalar.
+     * Un cuerpo vacío o con JSON inválido devuelve un stdClass vacío.
+     *
+     * @param string|null $key Clave a obtener del JSON decodificado (opcional)
      * @param mixed|null $default Valor por defecto si no existe la clave
-     * @return mixed Objeto JSON completo o valor específico si se proporciona key
+     * @return mixed JSON decodificado completo o valor específico si se proporciona key
      */
     public function json(?string $key = null, mixed $default = null): mixed {
-        if ($this->jsonCache === null) {
+        if (!$this->jsonDecoded) {
             $this->jsonCache = json_decode($this->body) ?? new stdClass();
+            $this->jsonDecoded = true;
         }
 
         if ($key === null) {
             return $this->jsonCache;
         }
 
-        return $this->jsonCache->{$key} ?? $default;
+        if (is_object($this->jsonCache)) {
+            return $this->jsonCache->{$key} ?? $default;
+        }
+
+        if (is_array($this->jsonCache)) {
+            return $this->jsonCache[$key] ?? $default;
+        }
+
+        return $default;
     }
 
     /**
