@@ -14,6 +14,7 @@ namespace PhobosFramework\Tests\Unit\Http;
 
 use PHPUnit\Framework\TestCase;
 use PhobosFramework\Http\Request;
+use stdClass;
 
 /**
  * Class RequestTest
@@ -230,6 +231,103 @@ class RequestTest extends TestCase {
 
         $this->assertEquals('1', $all['page']);
         $this->assertEquals('123', $all['id']);
+    }
+
+    /**
+     * Regresión: jsonCache estaba tipado ?stdClass, así que un cuerpo con un array JSON
+     * (ej: un POST bulk) lanzaba un TypeError al decodificarlo.
+     */
+    public function test_json_handles_array_body(): void {
+        $request = $this->createRequestWithBody('[{"a":1},{"a":2}]');
+
+        $json = $request->json();
+
+        $this->assertIsArray($json);
+        $this->assertCount(2, $json);
+        $this->assertEquals(1, $json[0]->a);
+    }
+
+    public function test_json_key_access_on_array_body(): void {
+        $request = $this->createRequestWithBody('["primero","segundo"]');
+
+        $this->assertEquals('primero', $request->json('0'));
+        $this->assertEquals('fallback', $request->json('99', 'fallback'));
+    }
+
+    public function test_json_handles_scalar_body(): void {
+        $request = $this->createRequestWithBody('"hola"');
+
+        $this->assertEquals('hola', $request->json());
+        $this->assertEquals('fallback', $request->json('cualquier', 'fallback'));
+    }
+
+    public function test_json_returns_empty_object_for_invalid_body(): void {
+        $request = $this->createRequestWithBody('no soy json');
+
+        $this->assertInstanceOf(stdClass::class, $request->json());
+        $this->assertEquals('fallback', $request->json('nombre', 'fallback'));
+    }
+
+    public function test_json_returns_empty_object_for_empty_body(): void {
+        $request = $this->createRequestWithBody('');
+
+        $this->assertInstanceOf(stdClass::class, $request->json());
+    }
+
+    public function test_json_caches_decoded_body(): void {
+        $request = $this->createRequestWithBody('{"n":1}');
+
+        $this->assertSame($request->json(), $request->json());
+    }
+
+    /**
+     * Regresión: capture() pasaba el resultado de parse_url() directo a un parámetro
+     * tipado string, pero parse_url() devuelve null cuando no hay path que extraer
+     * (ej: una URI que arranca con `//`), lo que lanzaba un TypeError.
+     */
+    public function test_capture_falls_back_to_root_when_uri_has_no_path(): void {
+        $request = $this->captureWithUri('//evil.com');
+
+        $this->assertEquals('/', $request->path());
+    }
+
+    public function test_capture_falls_back_to_root_for_malformed_uri(): void {
+        $request = $this->captureWithUri('http://:80');
+
+        $this->assertEquals('/', $request->path());
+    }
+
+    public function test_capture_extracts_path_without_query_string(): void {
+        $request = $this->captureWithUri('/users/5?page=2');
+
+        $this->assertEquals('/users/5', $request->path());
+    }
+
+    private function captureWithUri(string $uri): Request {
+        $originalServer = $_SERVER;
+
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['REQUEST_URI'] = $uri;
+
+        try {
+            return Request::capture();
+        } finally {
+            $_SERVER = $originalServer;
+        }
+    }
+
+    private function createRequestWithBody(string $body): Request {
+        return new Request(
+            method: 'POST',
+            path: '/items',
+            query: [],
+            post: [],
+            files: [],
+            cookies: [],
+            server: [],
+            headers: [],
+            body: $body
+        );
     }
 
     private function createRequest(

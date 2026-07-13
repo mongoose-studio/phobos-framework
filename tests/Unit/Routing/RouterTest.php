@@ -165,6 +165,20 @@ class RouterTest extends TestCase {
         $this->assertEquals('/users/123', $url);
     }
 
+    /**
+     * Regresión: route() reemplazaba con str_replace(":$key"), así que un parámetro
+     * corto pisaba dentro de uno largo que lo contuviera (`:id` dentro de `:idx`),
+     * generando una URL incorrecta sin ningún error.
+     */
+    public function test_route_does_not_partially_replace_longer_param_names(): void {
+        $this->router->get('/reports/:id/cells/:idx', fn() => 'cell')
+            ->name('reports.cell');
+
+        $url = $this->router->route('reports.cell', ['id' => 7, 'idx' => 42]);
+
+        $this->assertEquals('/reports/7/cells/42', $url);
+    }
+
     public function test_throws_exception_for_missing_route_parameters(): void {
         $this->router->get('/users/:id', fn() => 'user')
             ->name('users.show');

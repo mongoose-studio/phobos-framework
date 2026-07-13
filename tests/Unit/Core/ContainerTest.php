@@ -189,6 +189,49 @@ class ContainerTest extends TestCase {
         $this->assertEmpty($this->container->getBindings());
         $this->assertEmpty($this->container->getInstances());
     }
+
+    /**
+     * Regresión: build() solo desapilaba el buildStack en el camino feliz, así que una
+     * resolución fallida dejaba la clase en la pila y el siguiente intento la reportaba
+     * como dependencia circular inexistente.
+     */
+    public function test_failed_resolution_does_not_poison_build_stack(): void {
+        $firstError = null;
+        $secondError = null;
+
+        try {
+            $this->container->make(ServiceWithUnresolvablePrimitive::class);
+        } catch (ContainerException $e) {
+            $firstError = $e->getMessage();
+        }
+
+        try {
+            $this->container->make(ServiceWithUnresolvablePrimitive::class);
+        } catch (ContainerException $e) {
+            $secondError = $e->getMessage();
+        }
+
+        $this->assertNotNull($firstError);
+        $this->assertSame($firstError, $secondError);
+        $this->assertStringNotContainsString('Circular dependency', $secondError);
+    }
+
+    /**
+     * El fallo puede estar en una dependencia anidada: la clase de arriba también
+     * debe quedar fuera de la pila para poder resolverse después.
+     */
+    public function test_build_stack_is_clean_after_nested_failure(): void {
+        try {
+            $this->container->make(ServiceWithFailingDependency::class);
+        } catch (ContainerException) {
+            // esperado
+        }
+
+        $this->expectException(ContainerException::class);
+        $this->expectExceptionMessageMatches('/^(?!.*Circular dependency).*$/s');
+
+        $this->container->make(ServiceWithFailingDependency::class);
+    }
 }
 
 // Test fixtures
@@ -269,4 +312,9 @@ class ServiceWithNullableDependency {
 }
 
 class NonExistentService {
+}
+
+class ServiceWithFailingDependency {
+    public function __construct(private ServiceWithUnresolvablePrimitive $service) {
+    }
 }

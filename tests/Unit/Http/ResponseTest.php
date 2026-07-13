@@ -13,6 +13,7 @@
 namespace PhobosFramework\Tests\Unit\Http;
 
 use PHPUnit\Framework\TestCase;
+use PhobosFramework\Http\HttpStatus;
 use PhobosFramework\Http\Response;
 
 /**
@@ -164,5 +165,96 @@ class ResponseTest extends TestCase {
         $response = new Response('content', 200, ['X-Custom' => 'value']);
 
         $this->assertEquals('value', $response->getHeaders()['X-Custom']);
+    }
+
+    /**
+     * Regresión: el constructor usaba intval() sobre el enum, lo que devolvía 1
+     * y producía un status HTTP inválido con respuesta vacía.
+     */
+    public function test_constructor_accepts_http_status_enum(): void {
+        $response = new Response('content', HttpStatus::CREATED);
+
+        $this->assertSame(201, $response->getStatusCode());
+    }
+
+    public function test_json_accepts_http_status_enum(): void {
+        $response = Response::json(['ok' => true], HttpStatus::CREATED);
+
+        $this->assertSame(201, $response->getStatusCode());
+    }
+
+    /**
+     * Regresión: error() pasaba el enum a getStatusText(int), lo que lanzaba un TypeError.
+     */
+    public function test_error_accepts_http_status_enum(): void {
+        $response = Response::error('Not found', HttpStatus::NOT_FOUND);
+
+        $this->assertSame(404, $response->getStatusCode());
+
+        $content = json_decode($response->getContent(), true);
+        $this->assertEquals('Not Found', $content['error']);
+        $this->assertEquals('Not found', $content['message']);
+    }
+
+    public function test_empty_accepts_http_status_enum(): void {
+        $response = Response::empty(HttpStatus::NO_CONTENT);
+
+        $this->assertSame(204, $response->getStatusCode());
+    }
+
+    public function test_text_accepts_http_status_enum(): void {
+        $response = Response::text('gone', HttpStatus::GONE);
+
+        $this->assertSame(410, $response->getStatusCode());
+    }
+
+    public function test_html_accepts_http_status_enum(): void {
+        $response = Response::html('<h1>Oops</h1>', HttpStatus::INTERNAL_SERVER_ERROR);
+
+        $this->assertSame(500, $response->getStatusCode());
+    }
+
+    public function test_status_accepts_http_status_enum(): void {
+        $response = (new Response('content'))->status(HttpStatus::ACCEPTED);
+
+        $this->assertSame(202, $response->getStatusCode());
+    }
+
+    /**
+     * Regresión: con un content array y un Content-Type explícito, send() hacía
+     * `echo $array` ("Array to string conversion") en vez de serializarlo.
+     */
+    public function test_send_serializes_array_content_with_explicit_content_type(): void {
+        $response = new Response(
+            ['key' => 'value'],
+            200,
+            ['Content-Type' => 'application/vnd.api+json']
+        );
+
+        ob_start();
+        $response->send();
+        $output = ob_get_clean();
+
+        $this->assertEquals('{"key":"value"}', $output);
+    }
+
+    public function test_send_serializes_array_content_without_content_type(): void {
+        $response = new Response(['key' => 'value']);
+
+        ob_start();
+        $response->send();
+        $output = ob_get_clean();
+
+        $this->assertEquals('{"key":"value"}', $output);
+    }
+
+    public function test_send_outputs_string_content_as_is(): void {
+        $response = Response::html('<h1>Hola</h1>');
+
+        ob_start();
+        $response->send();
+        $output = ob_get_clean();
+
+        $this->assertEquals('<h1>Hola</h1>', $output);
     }
 }

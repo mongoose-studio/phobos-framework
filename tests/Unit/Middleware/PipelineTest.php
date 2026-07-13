@@ -13,6 +13,7 @@
 namespace PhobosFramework\Tests\Unit\Middleware;
 
 use PHPUnit\Framework\TestCase;
+use PhobosFramework\Core\Container;
 use PhobosFramework\Middleware\Pipeline;
 use PhobosFramework\Middleware\MiddlewareInterface;
 use PhobosFramework\Http\Request;
@@ -173,6 +174,33 @@ class PipelineTest extends TestCase {
         $this->assertEquals(200, $response->getStatusCode());
     }
 
+    /**
+     * Regresión: carry() hacía `new $middleware()` sin pasar por el container, así que
+     * un middleware con dependencias en el constructor lanzaba un ArgumentCountError.
+     */
+    public function test_pipeline_resolves_middleware_dependencies_from_container(): void {
+        $request = $this->createRequest();
+        $pipeline = new Pipeline($request, new Container());
+
+        $response = $pipeline
+            ->through([MiddlewareWithDependency::class])
+            ->then(fn($req) => Response::json(['result' => 'success']));
+
+        $this->assertEquals('inyectado', $response->getHeaders()['X-Injected'] ?? null);
+    }
+
+    public function test_pipeline_uses_singleton_instance_from_container(): void {
+        $request = $this->createRequest();
+        $container = new Container();
+        $container->instance(MiddlewareDependency::class, new MiddlewareDependency('compartido'));
+
+        $response = (new Pipeline($request, $container))
+            ->through([MiddlewareWithDependency::class])
+            ->then(fn($req) => Response::json(['result' => 'success']));
+
+        $this->assertEquals('compartido', $response->getHeaders()['X-Injected'] ?? null);
+    }
+
     private function createRequest(): Request {
         return new Request(
             method: 'GET',
@@ -234,5 +262,21 @@ class ModifyResponseMiddleware implements MiddlewareInterface {
 class JsonSerializableObject implements \JsonSerializable {
     public function jsonSerialize(): mixed {
         return ['data' => 'test'];
+    }
+}
+
+class MiddlewareDependency {
+    public function __construct(public string $value = 'inyectado') {
+    }
+}
+
+class MiddlewareWithDependency implements MiddlewareInterface {
+    public function __construct(private MiddlewareDependency $dependency) {
+    }
+
+    public function handle(Request $request, \Closure $next): Response {
+        $response = $next($request);
+        $response->header('X-Injected', $this->dependency->value);
+        return $response;
     }
 }

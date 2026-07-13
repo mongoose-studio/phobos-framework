@@ -1,6 +1,6 @@
 # Phobos Framework Test Suite
 
-Esta es la suite de pruebas para el Phobos Framework v3.0.2. (aún faltan algunas que se desarrollarán a futuro 😬)
+Esta es la suite de pruebas para el Phobos Framework v3.1.0. (aún faltan algunas que se desarrollarán a futuro 😬)
 
 ## Estructura de Tests
 
@@ -22,7 +22,7 @@ tests/
 
 ## Requisitos
 
-- PHP >= 8.3
+- PHP >= 8.4
 - PHPUnit ^11.0
 - Composer
 
