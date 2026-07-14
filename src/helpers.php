@@ -150,23 +150,34 @@ if (!function_exists('route')) {
 
 if (!function_exists('storage_path')) {
     /**
-     * Obtener path del directorio storage
+     * Obtener path del directorio storage (en la raíz del proyecto)
      * @throws ContainerException
      */
     function storage_path(string $path = ''): string {
-        $basePath = dirname(phobos()->getBasePath());
+        $basePath = phobos()->getBasePath();
         return rtrim($basePath . '/storage/' . ltrim($path, '/'), '/');
     }
 }
 
 if (!function_exists('base_path')) {
     /**
-     * Obtener path base de la aplicación
+     * Obtener la raíz del proyecto
      * @throws ContainerException
      */
     function base_path(string $path = ''): string {
-        $basePath = dirname(phobos()->getBasePath());
+        $basePath = phobos()->getBasePath();
         return rtrim($basePath . '/' . ltrim($path, '/'), '/');
+    }
+}
+
+if (!function_exists('app_path')) {
+    /**
+     * Obtener el directorio de la aplicación (por defecto raíz/app)
+     * @throws ContainerException
+     */
+    function app_path(string $path = ''): string {
+        $appPath = phobos()->getAppPath();
+        return rtrim($appPath . '/' . ltrim($path, '/'), '/');
     }
 }
 
@@ -260,7 +271,7 @@ if (!function_exists('config_path')) {
      * @throws ContainerException
      */
     function config_path(string $path = ''): string {
-        $basePath = dirname(phobos()->getBasePath());
+        $basePath = phobos()->getBasePath();
         return rtrim($basePath . '/config/' . ltrim($path, '/'), '/');
     }
 }
@@ -271,7 +282,7 @@ if (!function_exists('public_path')) {
      * @throws ContainerException
      */
     function public_path(string $path = ''): string {
-        $basePath = dirname(phobos()->getBasePath());
+        $basePath = phobos()->getBasePath();
         return rtrim($basePath . '/public/' . ltrim($path, '/'), '/');
     }
 }

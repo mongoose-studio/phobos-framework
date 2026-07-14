@@ -56,11 +56,14 @@ composer require mongoose-studio/phobos-framework
 
 ```php
 <?php
-require __DIR__ . '/../vendor/autoload.php';
+define('ROOT', dirname(__DIR__));      // raíz del proyecto
+define('APPLICATION', ROOT . '/app');  // dir de la app (opcional; por defecto ROOT/app)
 
-$app = Phobos::init(__DIR__)
-    ->loadEnvironment()
-    ->loadConfig()
+require ROOT . '/vendor/autoload.php';
+
+$app = Phobos::init(ROOT, APPLICATION)  // raíz primero, luego el dir de la app
+    ->loadEnvironment()                 // lee ROOT/.env
+    ->loadConfig()                      // lee ROOT/config
     ->bootstrap(App\AppModule::class);
 
 $response = $app->run();

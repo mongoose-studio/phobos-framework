@@ -43,6 +43,7 @@ class Phobos {
 
     private static ?self $instance = null;
     private string $basePath;
+    private string $appPath;
     private Router $router;
     private Container $container;
     private ?Request $request = null;
@@ -60,10 +61,12 @@ class Phobos {
      * - El router
      * - Registra las instancias básicas en el contenedor
      *
-     * @param string $basePath Ruta base donde se encuentra la aplicación
+     * @param string $basePath Raíz del proyecto (donde viven .env, config/, storage/, public/)
+     * @param string|null $appPath Directorio de la aplicación. Si es null, se usa "$basePath/app"
      */
-    private function __construct(string $basePath) {
-        $this->basePath = $basePath;
+    private function __construct(string $basePath, ?string $appPath = null) {
+        $this->basePath = rtrim($basePath, '/');
+        $this->appPath = $appPath !== null ? rtrim($appPath, '/') : $this->basePath . '/app';
         $this->container = new Container();
         $this->router = new Router();
 
@@ -73,7 +76,8 @@ class Phobos {
         $this->container->instance(Phobos::class, $this);
 
         Observer::record('phobos.initialized', [
-            'base_path' => $basePath,
+            'base_path' => $this->basePath,
+            'app_path' => $this->appPath,
         ]);
     }
 
@@ -83,12 +87,13 @@ class Phobos {
      * Implementa el patrón Singleton para garantizar una única instancia.
      * Configura el contenedor de dependencias y registra los servicios básicos.
      *
-     * @param string $basePath Ruta base de la aplicación
+     * @param string $basePath Raíz del proyecto (donde viven .env, config/, storage/, public/)
+     * @param string|null $appPath Directorio de la aplicación (por defecto "$basePath/app")
      * @return self Instancia única de Phobos
      */
-    public static function init(string $basePath): self {
+    public static function init(string $basePath, ?string $appPath = null): self {
         if (self::$instance === null) {
-            self::$instance = new self($basePath);
+            self::$instance = new self($basePath, $appPath);
         }
 
         return self::$instance;
@@ -115,9 +120,28 @@ class Phobos {
     public function loadEnvironment(?string $envFile = null): self {
         Observer::record('phobos.loading_environment');
 
-        $envFile = $envFile ?? dirname($this->basePath) . '/.env';
+        $envFile = $envFile ?? $this->basePath . '/.env';
 
         if (!file_exists($envFile)) {
+            // Guard: init() recibe la RAÍZ del proyecto, no el directorio de la app. Si no hay
+            // .env en la raíz pero sí un nivel más arriba, es casi seguro que se pasó el dir
+            // app/ por error. Fallar ruidoso (con instrucción), no en silencio.
+            $legacyEnv = dirname($this->basePath) . '/.env';
+            if ($envFile === $this->basePath . '/.env' && file_exists($legacyEnv)) {
+                $message =
+                    "Phobos::init() espera la raíz del proyecto, no el directorio de la app. " .
+                    "Se encontró un .env en '" . dirname($this->basePath) . "' pero no en '{$this->basePath}'. " .
+                    "Usa: Phobos::init(ROOT, APPLICATION) " .
+                    "(o Phobos::init(ROOT) si la app vive en ROOT/app).";
+
+                // El .env aún no está cargado, así que un manejador de errores que dependa de
+                // APP_DEBUG mostraría un 500 genérico y ocultaría esta instrucción. Se escribe
+                // al log del servidor para que el dev que migra la encuentre siempre.
+                error_log('[Phobos] ' . $message);
+
+                throw new RuntimeException($message);
+            }
+
             Observer::record('phobos.environment_not_found', [
                 'file' => $envFile,
             ]);
@@ -150,7 +174,7 @@ class Phobos {
     public function loadConfig(?string $configPath = null): self {
         Observer::record('phobos.loading_config');
 
-        $configPath = $configPath ?? dirname($this->basePath) . '/config';
+        $configPath = $configPath ?? $this->basePath . '/config';
 
         Config::setPath($configPath);
 
@@ -476,11 +500,24 @@ class Phobos {
     }
 
     /**
-     * Obtiene la ruta base de la aplicación
+     * Obtiene la raíz del proyecto
      *
-     * @return string Ruta absoluta al directorio raíz de la aplicación
+     * Es el directorio donde viven .env, config/, storage/ y public/.
+     *
+     * @return string Ruta absoluta a la raíz del proyecto
      */
     public function getBasePath(): string {
         return $this->basePath;
+    }
+
+    /**
+     * Obtiene el directorio de la aplicación
+     *
+     * Por defecto es "$basePath/app", salvo que se haya pasado uno explícito a init().
+     *
+     * @return string Ruta absoluta al directorio de la aplicación
+     */
+    public function getAppPath(): string {
+        return $this->appPath;
     }
 }
