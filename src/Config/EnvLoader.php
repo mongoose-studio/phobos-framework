@@ -87,12 +87,71 @@ class EnvLoader {
      * 2. Array global $_ENV
      * 3. Variables de entorno del sistema
      *
+     * El valor se castea con {@see self::cast()}: un `.env` solo contiene texto, pero
+     * `APP_DEBUG=false` debe llegar al código como el booleano `false`, no como el string
+     * `"false"` (que en PHP es *truthy*, y por lo tanto dejaría el flag encendido siempre).
+     *
+     * El valor por defecto se devuelve únicamente cuando la variable **no existe**. Un
+     * valor presente pero vacío (`DB_PASSWORD=`) o falsy (`APP_DEBUG=0`) se respeta tal
+     * cual: si el usuario lo escribió, es lo que quiso decir.
+     *
      * @param string $key Nombre de la variable
      * @param mixed $default Valor por defecto si la variable no existe
-     * @return mixed Valor de la variable o el valor por defecto
+     * @return mixed Valor de la variable ya casteado, o el valor por defecto
      */
     public static function get(string $key, mixed $default = null): mixed {
-        return self::$env[$key] ?? $_ENV[$key] ?? getenv($key) ?: $default;
+        $value = self::$env[$key] ?? $_ENV[$key] ?? getenv($key);
+
+        // getenv() devuelve false cuando la variable no existe: ese es el único
+        // caso en que corresponde el default.
+        if ($value === false) {
+            return $default;
+        }
+
+        return self::cast($value);
+    }
+
+    /**
+     * Convierte un valor de texto del .env a su tipo nativo de PHP
+     *
+     * Un archivo .env solo puede contener texto, así que sin esta conversión todo llega
+     * como string — y en PHP `"false"` es truthy. Se cubren los literales reconocidos por
+     * convención; los números NO se castean a propósito, porque hay valores numéricos que
+     * son semánticamente texto y perderían su forma (un `"007"` no es `7`, y un `"1.0"` de
+     * versión no es el float `1.0`). Para esos, castea explícitamente en `config/`.
+     *
+     * @param mixed $value Valor crudo leído del entorno
+     * @return mixed Valor con su tipo nativo, o el original si no hay conversión aplicable
+     */
+    private static function cast(mixed $value): mixed {
+        if (!is_string($value)) {
+            return $value;
+        }
+
+        return match (strtolower(trim($value))) {
+            'true', '(true)' => true,
+            'false', '(false)' => false,
+            'null', '(null)' => null,
+            'empty', '(empty)' => '',
+            default => $value,
+        };
+    }
+
+    /**
+     * Obtiene el valor crudo, sin castear, tal como está escrito en el entorno
+     *
+     * Lo usa la expansión de variables: al interpolar `${VAR}` dentro de otro valor se
+     * necesita el texto original. Si se usara {@see self::get()}, un `${APP_DEBUG}` se
+     * expandiría al booleano `true` y PHP lo pegaría en la cadena como `"1"`.
+     *
+     * @param string $key Nombre de la variable
+     * @param string $default Valor por defecto si la variable no existe
+     * @return string Valor crudo de la variable
+     */
+    private static function getRaw(string $key, string $default = ''): string {
+        $value = self::$env[$key] ?? $_ENV[$key] ?? getenv($key);
+
+        return $value === false ? $default : (string)$value;
     }
 
     /**
@@ -166,15 +225,17 @@ class EnvLoader {
      * @return string Valor con las variables expandidas
      */
     private static function expandVariables(string $value): string {
+        // Se expande con el valor CRUDO: interpolar un valor ya casteado metería un
+        // booleano en medio de una cadena, y PHP lo convertiría en "1" o en "".
         // Expandir ${VAR}
         /** @noinspection RegExpRedundantEscape */
         $value = preg_replace_callback('/\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}/', function ($matches) {
-            return self::get($matches[1], '');
+            return self::getRaw($matches[1]);
         }, $value);
 
         // Expandir $VAR (sin llaves)
         return preg_replace_callback('/\$([a-zA-Z_][a-zA-Z0-9_]*)/', function ($matches) {
-            return self::get($matches[1], '');
+            return self::getRaw($matches[1]);
         }, $value);
     }
 }

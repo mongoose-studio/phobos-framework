@@ -59,7 +59,7 @@ if (!function_exists('phobos_version')) {
      * Obtener versión de Phobos
      */
     function phobos_version(): string {
-        return '3.0.2';
+        return '3.3.0';
     }
 }
 
@@ -68,7 +68,15 @@ if (!function_exists('is_dev')) {
      * Verificar si está en modo desarrollo
      */
     function is_dev(): bool {
-        return env('APP_ENV') === 'dev' || env('APP_ENV') === 'development' || !in_array(env('APP_DEBUG', false), [false, 'false', '0']);
+        $environment = env('APP_ENV');
+
+        if ($environment === 'dev' || $environment === 'development') {
+            return true;
+        }
+
+        // env() ya devuelve un booleano real para "true"/"false"; filter_var cubre además
+        // las formas que no castea (1/0, yes/no, on/off) y cualquier valor inesperado.
+        return filter_var(env('APP_DEBUG', false), FILTER_VALIDATE_BOOL);
     }
 }
 
